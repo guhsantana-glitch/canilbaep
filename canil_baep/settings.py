@@ -18,7 +18,7 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "canilbaep.onrender.com").split(",")
+ALLOWED_HOSTS = ["canilbaep.onrender.com"]
 CSRF_TRUSTED_ORIGINS = [
     o.strip() for o in os.environ.get(
         "DJANGO_CSRF_TRUSTED_ORIGINS",
