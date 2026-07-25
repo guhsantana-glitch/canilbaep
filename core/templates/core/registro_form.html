@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">{{ cao.nome }}</span>
+<h1>Novo registro</h1>
+<form method="post" enctype="multipart/form-data" class="card">
+  {% csrf_token %}
+  {% for field in form %}
+  <div class="form-linha">
+    <label>{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}<p style="color:#8a3324;font-size:0.8rem;">{{ field.errors|striptags }}</p>{% endif %}
+  </div>
+  {% endfor %}
+  <button class="btn" type="submit">Salvar</button>
+  <a href="{% url 'ficha_cao' cao.pk %}" class="btn btn-secundario">Cancelar</a>
+</form>
+{% endblock %}

@@ -1,0 +1,188 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}Canil 10° BAEP{% endblock %}</title>
+<style>
+:root{
+  --verde-escuro:#1c2e22;
+  --verde-medio:#33513f;
+  --caqui:#a89968;
+  --caqui-claro:#eee7d3;
+  --off-white:#f7f6f1;
+  --texto:#20241f;
+  --alerta:#8a3324;
+  --borda:#d9d3bd;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  font-family:'Segoe UI', Roboto, Arial, sans-serif;
+  background:var(--off-white);
+  color:var(--texto);
+}
+header.topo{
+  background:var(--verde-escuro);
+  color:var(--caqui-claro);
+  padding:0.9rem 1.5rem;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:4px solid var(--caqui);
+}
+header.topo .marca{
+  display:flex;
+  align-items:center;
+  gap:0.7rem;
+  font-weight:700;
+  letter-spacing:0.03em;
+  font-size:1.05rem;
+}
+header.topo .marca .selo{
+  width:34px;height:34px;border-radius:50%;
+  background:var(--caqui);
+  color:var(--verde-escuro);
+  display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:0.85rem;
+}
+nav.menu{
+  display:flex;gap:1.2rem;
+  font-size:0.92rem;
+}
+nav.menu a{
+  color:var(--caqui-claro);
+  text-decoration:none;
+  padding:0.3rem 0;
+  border-bottom:2px solid transparent;
+}
+nav.menu a:hover, nav.menu a.ativo{
+  border-bottom:2px solid var(--caqui);
+}
+.usuario-area{font-size:0.85rem; display:flex; gap:0.8rem; align-items:center;}
+.usuario-area a{color:var(--caqui-claro);}
+main{
+  max-width:1100px;
+  margin:0 auto;
+  padding:1.8rem 1.5rem 3rem;
+}
+h1{font-size:1.5rem;color:var(--verde-escuro);margin-bottom:0.3rem;}
+h2{font-size:1.15rem;color:var(--verde-medio);border-bottom:1px solid var(--borda);padding-bottom:0.4rem;margin-top:2rem;}
+.eyebrow{
+  text-transform:uppercase;
+  letter-spacing:0.12em;
+  font-size:0.72rem;
+  color:var(--caqui);
+  background:var(--verde-escuro);
+  display:inline-block;
+  padding:0.15rem 0.6rem;
+  border-radius:2px;
+  margin-bottom:0.6rem;
+}
+.card{
+  background:#fff;
+  border:1px solid var(--borda);
+  border-radius:6px;
+  padding:1.2rem 1.4rem;
+  margin-bottom:1.2rem;
+}
+table{width:100%;border-collapse:collapse;font-size:0.92rem;}
+th{
+  text-align:left;
+  background:var(--verde-medio);
+  color:#fff;
+  padding:0.55rem 0.7rem;
+  font-weight:600;
+}
+td{padding:0.55rem 0.7rem;border-bottom:1px solid var(--borda);}
+tr:hover td{background:#faf9f4;}
+.tag{
+  display:inline-block;
+  padding:0.15rem 0.55rem;
+  border-radius:20px;
+  font-size:0.75rem;
+  font-weight:600;
+}
+.tag-ativo{background:#e2ecdf;color:#2c5a3e;}
+.tag-treinamento{background:#eee7d3;color:#7a6524;}
+.tag-baixado{background:#eee0e0;color:var(--alerta);}
+.tag-obito{background:#e6e6e6;color:#555;}
+.btn{
+  display:inline-block;
+  padding:0.5rem 1rem;
+  border-radius:4px;
+  background:var(--verde-escuro);
+  color:#fff !important;
+  text-decoration:none;
+  font-size:0.88rem;
+  border:none;
+  cursor:pointer;
+}
+.btn:hover{background:var(--verde-medio);}
+.btn-secundario{background:transparent;color:var(--verde-escuro) !important;border:1px solid var(--verde-escuro);}
+.btn-perigo{background:var(--alerta);}
+.barra-acoes{display:flex;gap:0.6rem;flex-wrap:wrap;margin:1rem 0;}
+.grid-caes{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(230px,1fr));
+  gap:1rem;
+  margin-top:1rem;
+}
+.ficha-cao{
+  background:#fff;border:1px solid var(--borda);border-radius:8px;
+  overflow:hidden;transition:box-shadow .15s;
+  text-decoration:none;color:var(--texto);display:block;
+}
+.ficha-cao:hover{box-shadow:0 3px 10px rgba(0,0,0,0.08);}
+.ficha-cao .foto{
+  height:140px;background:var(--caqui-claro);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--caqui);font-size:2.2rem;font-weight:800;
+  background-size:cover;background-position:center;
+}
+.ficha-cao .info{padding:0.8rem 0.9rem;}
+.ficha-cao .info h3{margin:0 0 0.2rem;font-size:1.05rem;color:var(--verde-escuro);}
+.ficha-cao .info p{margin:0.1rem 0;font-size:0.82rem;color:#555;}
+.form-linha{margin-bottom:0.9rem;}
+.form-linha label{display:block;font-size:0.85rem;font-weight:600;margin-bottom:0.25rem;color:var(--verde-escuro);}
+.form-linha input, .form-linha select, .form-linha textarea{
+  width:100%;padding:0.5rem 0.6rem;border:1px solid var(--borda);border-radius:4px;font-size:0.92rem;font-family:inherit;
+}
+.mensagens{margin-bottom:1rem;}
+.msg{padding:0.6rem 0.9rem;border-radius:4px;margin-bottom:0.5rem;font-size:0.9rem;}
+.msg-success{background:#e2ecdf;color:#2c5a3e;}
+.filtro-barra{display:flex;gap:0.8rem;align-items:end;flex-wrap:wrap;margin-bottom:0.5rem;}
+footer{text-align:center;padding:1.2rem;color:#8a8a7c;font-size:0.78rem;}
+</style>
+</head>
+<body>
+<header class="topo">
+  <div class="marca">
+    <div class="selo">10°</div>
+    <div>SISTEMA CANIL<br><span style="font-weight:400;font-size:0.72rem;opacity:0.8;">10° BAEP</span></div>
+  </div>
+  {% if user.is_authenticated %}
+  <nav class="menu">
+    <a href="{% url 'lista_caes' %}">Cães</a>
+    <a href="{% url 'lista_condutores' %}">Condutores</a>
+    <a href="{% url 'relatorio_mensal' %}">Relatórios</a>
+    <a href="/admin/">Admin</a>
+  </nav>
+  <div class="usuario-area">
+    <span>{{ user.get_username }}</span>
+    <a href="{% url 'logout' %}">Sair</a>
+  </div>
+  {% endif %}
+</header>
+<main>
+  {% if messages %}
+  <div class="mensagens">
+    {% for m in messages %}<div class="msg msg-{{ m.tags }}">{{ m }}</div>{% endfor %}
+  </div>
+  {% endif %}
+  {% block content %}{% endblock %}
+</main>
+<footer>Sistema de Gestão do Canil &middot; 10° BAEP</footer>
+</body>
+</html>

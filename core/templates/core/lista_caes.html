@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Plantel</span>
+<h1>Cães do canil</h1>
+
+<form method="get" class="filtro-barra">
+  <div class="form-linha" style="min-width:200px;margin-bottom:0;">
+    <label>Buscar por nome</label>
+    <input type="text" name="q" value="{{ busca }}" placeholder="Ex: Thor">
+  </div>
+  <div class="form-linha" style="min-width:200px;margin-bottom:0;">
+    <label>Situação</label>
+    <select name="status">
+      <option value="">Todas</option>
+      {% for valor, rotulo in status_choices %}
+      <option value="{{ valor }}" {% if valor == status_selecionado %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-secundario" type="submit">Filtrar</button>
+</form>
+
+<div class="barra-acoes">
+  <a href="{% url 'cao_novo' %}" class="btn">+ Novo cão</a>
+</div>
+
+<div class="grid-caes">
+  {% for cao in caes %}
+  <a href="{% url 'ficha_cao' cao.pk %}" class="ficha-cao">
+    <div class="foto" {% if cao.foto %}style="background-image:url('{{ cao.foto.url }}');"{% endif %}>
+      {% if not cao.foto %}{{ cao.nome|slice:":1" }}{% endif %}
+    </div>
+    <div class="info">
+      <h3>{{ cao.nome }}</h3>
+      <p>{{ cao.raca }} &middot; {{ cao.get_sexo_display }}</p>
+      <p>Box: {{ cao.box|default:"-" }}</p>
+      <p>Condutor: {{ cao.condutor_atual.nome|default:"-" }}</p>
+      <span class="tag tag-{{ cao.status|lower }}">{{ cao.get_status_display }}</span>
+    </div>
+  </a>
+  {% empty %}
+  <p>Nenhum cão cadastrado ainda.</p>
+  {% endfor %}
+</div>
+{% endblock %}

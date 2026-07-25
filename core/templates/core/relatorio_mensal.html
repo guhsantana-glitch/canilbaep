@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Relatórios</span>
+<h1>Relatório mensal por cão</h1>
+<form method="post" class="card">
+  {% csrf_token %}
+  {% for field in form %}
+  <div class="form-linha">
+    <label>{{ field.label }}</label>
+    {{ field }}
+  </div>
+  {% endfor %}
+  <button class="btn" type="submit">Gerar relatório</button>
+</form>
+
+{% if resultado %}
+<div class="barra-acoes">
+  <a class="btn" target="_blank"
+     href="{% url 'relatorio_mensal_pdf' %}?cao={{ resultado.cao.pk }}&data_inicio={{ resultado.data_inicio|date:'Y-m-d' }}&data_fim={{ resultado.data_fim|date:'Y-m-d' }}">
+     Baixar PDF
+  </a>
+</div>
+
+<h2>Pesagens</h2>
+<table>
+  <tr><th>Data</th><th>Peso (kg)</th></tr>
+  {% for p in resultado.pesagens %}<tr><td>{{ p.data|date:"d/m/Y" }}</td><td>{{ p.peso_kg }}</td></tr>{% empty %}<tr><td colspan="2">Sem registros.</td></tr>{% endfor %}
+</table>
+
+<h2>Vacinas</h2>
+<table>
+  <tr><th>Tipo</th><th>Data</th></tr>
+  {% for v in resultado.vacinas %}<tr><td>{{ v.tipo }}</td><td>{{ v.data_aplicacao|date:"d/m/Y" }}</td></tr>{% empty %}<tr><td colspan="2">Sem registros.</td></tr>{% endfor %}
+</table>
+
+<h2>Medicamentos</h2>
+<table>
+  <tr><th>Nome</th><th>Início</th><th>Fim</th></tr>
+  {% for m in resultado.medicamentos %}<tr><td>{{ m.nome }}</td><td>{{ m.data_inicio|date:"d/m/Y" }}</td><td>{{ m.data_fim|date:"d/m/Y"|default:"-" }}</td></tr>{% empty %}<tr><td colspan="3">Sem registros.</td></tr>{% endfor %}
+</table>
+{% endif %}
+{% endblock %}

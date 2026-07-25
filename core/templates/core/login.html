@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<div style="max-width:380px;margin:3rem auto;" class="card">
+  <span class="eyebrow">Acesso restrito</span>
+  <h1>Entrar no sistema</h1>
+  <p style="color:#666;font-size:0.88rem;margin-top:-0.4rem;">Use suas credenciais cadastradas pela administração do canil.</p>
+
+  {% if govbr_disponivel %}
+  <a href="{% url 'govbr_login' %}" class="btn" style="width:100%;text-align:center;background:#1351b4;margin-bottom:1rem;">
+    Entrar com <b>gov.br</b>
+  </a>
+  <div style="text-align:center;color:#999;font-size:0.8rem;margin-bottom:1rem;">ou entre com seu usuário local</div>
+  {% else %}
+  <div style="background:#eee7d3;color:#7a6524;font-size:0.8rem;padding:0.5rem 0.7rem;border-radius:4px;margin-bottom:1rem;">
+    Login com gov.br ainda não configurado neste ambiente. Use o acesso local abaixo.
+  </div>
+  {% endif %}
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-linha">
+      <label>Usuário</label>
+      {{ form.username }}
+    </div>
+    <div class="form-linha">
+      <label>Senha</label>
+      {{ form.password }}
+    </div>
+    {% if form.errors %}<p style="color:#8a3324;font-size:0.85rem;">Usuário ou senha inválidos.</p>{% endif %}
+    <button class="btn btn-secundario" type="submit" style="width:100%;">Entrar com usuário local</button>
+  </form>
+</div>
+{% endblock %}
