@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Confirmar exclusão</h1>
+<div class="card">
+  <p>Tem certeza que deseja excluir o {{ tipo }} <b>{{ objeto }}</b>? Essa ação não pode ser desfeita.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn btn-perigo" type="submit">Sim, excluir</button>
+    <a href="javascript:history.back()" class="btn btn-secundario">Cancelar</a>
+  </form>
+</div>
+{% endblock %}
