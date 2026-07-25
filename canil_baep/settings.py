@@ -19,12 +19,7 @@ SECRET_KEY = os.environ.get(
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ["canilbaep.onrender.com"]
-CSRF_TRUSTED_ORIGINS = [
-    o.strip() for o in os.environ.get(
-        "DJANGO_CSRF_TRUSTED_ORIGINS",
-        "https://canilbaep.onrender.com"
-    ).split(",")]
-
+CSRF_TRUSTED_ORIGINS = ["https://canilbaep.onrender.com"]
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
