@@ -93,3 +93,9 @@ class RelatorioMensalForm(forms.Form):
     cao = forms.ModelChoiceField(queryset=Cao.objects.all(), label="Cão")
     data_inicio = DataISOField(label="De")
     data_fim = DataISOField(label="Até")
+
+
+class RelatorioGeralForm(forms.Form):
+    data_inicio = DataISOField(label="De")
+    data_fim = DataISOField(label="Até")
+    apenas_ativos = forms.BooleanField(label="Somente cães ativos no plantel", required=False, initial=True)

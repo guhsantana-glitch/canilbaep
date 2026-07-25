@@ -46,8 +46,11 @@ urlpatterns = [
     path("tipos-vacina/<int:pk>/editar/", views.tipo_vacina_form_view, name="tipo_vacina_editar"),
     path("tipos-vacina/<int:pk>/excluir/", views.tipo_vacina_excluir, name="tipo_vacina_excluir"),
 
+    path("relatorios/", views.relatorios_menu, name="relatorios_menu"),
     path("relatorios/mensal/", views.relatorio_mensal, name="relatorio_mensal"),
     path("relatorios/mensal/pdf/", views.relatorio_mensal_pdf, name="relatorio_mensal_pdf"),
+    path("relatorios/geral/", views.relatorio_geral, name="relatorio_geral"),
+    path("relatorios/geral/pdf/", views.relatorio_geral_pdf, name="relatorio_geral_pdf"),
 
     path("usuarios/", views.lista_usuarios, name="lista_usuarios"),
     path("usuarios/novo/", views.usuario_form_view, name="usuario_novo"),

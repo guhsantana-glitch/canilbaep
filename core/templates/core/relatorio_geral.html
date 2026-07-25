@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Relatórios</span>
+<h1>Relatório geral mensal (todos os cães)</h1>
+<form method="post" class="card">
+  {% csrf_token %}
+  {% for field in form %}
+  <div class="form-linha">
+    <label>{% if field.name == "apenas_ativos" %}{% else %}{{ field.label }}{% endif %}</label>
+    {% if field.name == "apenas_ativos" %}
+      <label style="font-weight:normal;"><input type="checkbox" name="{{ field.name }}" {% if field.value %}checked{% endif %} style="width:auto;display:inline-block;"> {{ field.label }}</label>
+    {% else %}
+      {{ field }}
+    {% endif %}
+  </div>
+  {% endfor %}
+  <button class="btn" type="submit">Gerar relatório</button>
+</form>
+
+{% if resultado %}
+<div class="barra-acoes">
+  <a class="btn" target="_blank"
+     href="{% url 'relatorio_geral_pdf' %}?data_inicio={{ resultado.data_inicio|date:'Y-m-d' }}&data_fim={{ resultado.data_fim|date:'Y-m-d' }}{% if resultado.apenas_ativos %}&apenas_ativos=on{% endif %}">
+     Baixar PDF
+  </a>
+</div>
+
+<table>
+  <tr>
+    <th>Cão</th><th>Box</th><th>Condutor</th><th>Situação</th><th>Peso atual</th>
+    <th>Vacinas no período</th><th>Medicamentos no período</th><th>Treinamentos no período</th>
+  </tr>
+  {% for linha in resultado.linhas %}
+  <tr>
+    <td>{{ linha.nome }}</td><td>{{ linha.box|default:"-" }}</td><td>{{ linha.condutor|default:"-" }}</td>
+    <td>{{ linha.status }}</td><td>{% if linha.peso_atual %}{{ linha.peso_atual }} kg{% else %}-{% endif %}</td>
+    <td>{{ linha.qtd_vacinas }}</td><td>{{ linha.qtd_medicamentos }}</td><td>{{ linha.qtd_treinamentos }}</td>
+  </tr>
+  {% empty %}<tr><td colspan="8">Nenhum cão encontrado para os filtros selecionados.</td></tr>{% endfor %}
+</table>
+{% endif %}
+{% endblock %}

@@ -179,3 +179,54 @@ def gerar_relatorio_mensal(cao, data_inicio, data_fim, pesagens, vacinas, medica
     doc.build(story)
     buffer.seek(0)
     return buffer
+
+
+def gerar_relatorio_geral_mensal(data_inicio, data_fim, linhas, apenas_ativos):
+    """Gera um PDF (A4, paisagem) com o resumo de todos os cães no período.
+
+    `linhas` é uma lista de dicts com as chaves:
+    nome, box, condutor, status, peso_atual, qtd_vacinas, qtd_medicamentos, qtd_treinamentos
+    """
+    from reportlab.lib.pagesizes import landscape
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4), topMargin=1.5 * cm, bottomMargin=1.5 * cm)
+    styles = getSampleStyleSheet()
+    story = []
+
+    _cabecalho_com_logo(story)
+    titulo = "10° BAEP - Relatório Mensal Geral do Canil"
+    if apenas_ativos:
+        titulo += " (cães ativos no plantel)"
+    story.append(Paragraph(titulo, styles["Title"]))
+    story.append(Paragraph(
+        f"Período: {data_inicio.strftime('%d/%m/%Y')} a {data_fim.strftime('%d/%m/%Y')}",
+        styles["Normal"]
+    ))
+    story.append(Spacer(1, 14))
+
+    cabecalho = ["Cão", "Box", "Condutor", "Situação", "Peso atual", "Vacinas no período", "Medicamentos no período", "Treinamentos no período"]
+    dados = [cabecalho]
+    for linha in linhas:
+        dados.append([
+            linha["nome"], linha["box"] or "-", linha["condutor"] or "-", linha["status"],
+            f'{linha["peso_atual"]} kg' if linha["peso_atual"] is not None else "-",
+            str(linha["qtd_vacinas"]), str(linha["qtd_medicamentos"]), str(linha["qtd_treinamentos"]),
+        ])
+
+    if len(dados) == 1:
+        story.append(Paragraph("Nenhum cão encontrado para os filtros selecionados.", styles["Normal"]))
+    else:
+        t = Table(dados, repeatRows=1, colWidths=[3.2*cm, 2*cm, 3.8*cm, 2.6*cm, 2.4*cm, 3.3*cm, 3.7*cm, 3.3*cm])
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#33513f")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("FONTSIZE", (0, 0), (-1, -1), 9),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#dddddd")),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+        story.append(t)
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer

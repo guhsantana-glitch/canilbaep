@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Relatórios</span>
+<h1>O que você quer gerar?</h1>
+<div class="grid-caes">
+  <a href="{% url 'relatorio_mensal' %}" class="ficha-cao">
+    <div class="info" style="padding:1.4rem;">
+      <h3>Relatório individual por cão</h3>
+      <p>Pesagens, vacinas e medicamentos de um cão específico em um período.</p>
+    </div>
+  </a>
+  <a href="{% url 'relatorio_geral' %}" class="ficha-cao">
+    <div class="info" style="padding:1.4rem;">
+      <h3>Relatório geral mensal</h3>
+      <p>Resumo de todos os cães (ativos ou todos) em um período: peso atual, vacinas, medicamentos e treinamentos.</p>
+    </div>
+  </a>
+</div>
+{% endblock %}

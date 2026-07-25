@@ -13,10 +13,10 @@ from .models import (
 )
 from .forms import (
     CaoForm, CondutorForm, VacinaForm, MedicamentoForm,
-    PesagemForm, TreinamentoForm, DocumentoForm, RelatorioMensalForm,
+    PesagemForm, TreinamentoForm, DocumentoForm, RelatorioMensalForm, RelatorioGeralForm,
     VeterinarioForm, TipoVacinaForm,
 )
-from .pdf_utils import gerar_ficha_box, gerar_relatorio_mensal
+from .pdf_utils import gerar_ficha_box, gerar_relatorio_mensal, gerar_relatorio_geral_mensal
 
 
 class CanilLoginView(LoginView):
@@ -275,7 +275,12 @@ def tipo_vacina_excluir(request, pk):
     return render(request, "core/confirmar_exclusao.html", {"objeto": tipo, "tipo": "tipo de vacina"})
 
 
-# ---------- Relatório mensal ----------
+# ---------- Relatórios ----------
+
+@login_required
+def relatorios_menu(request):
+    return render(request, "core/relatorios_menu.html")
+
 
 @login_required
 def relatorio_mensal(request):
@@ -313,6 +318,58 @@ def relatorio_mensal_pdf(request):
     )
     resp = HttpResponse(buffer, content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="relatorio_{cao.nome}_{di}_{df}.pdf"'
+    return resp
+
+
+def _montar_linhas_relatorio_geral(di, df, apenas_ativos):
+    caes = Cao.objects.select_related("condutor_atual").all()
+    if apenas_ativos:
+        caes = caes.filter(status=Cao.Status.ATIVO)
+    linhas = []
+    for cao in caes.order_by("nome"):
+        linhas.append({
+            "nome": cao.nome,
+            "box": cao.box,
+            "condutor": cao.condutor_atual.nome if cao.condutor_atual else None,
+            "status": cao.get_status_display(),
+            "peso_atual": cao.peso_atual(),
+            "qtd_vacinas": cao.vacinas.filter(data_aplicacao__range=(di, df)).count(),
+            "qtd_medicamentos": cao.medicamentos.filter(data_inicio__range=(di, df)).count(),
+            "qtd_treinamentos": cao.treinamentos.filter(data__range=(di, df)).count(),
+        })
+    return linhas
+
+
+@login_required
+def relatorio_geral(request):
+    resultado = None
+    if request.method == "POST":
+        form = RelatorioGeralForm(request.POST)
+        if form.is_valid():
+            di = form.cleaned_data["data_inicio"]
+            df = form.cleaned_data["data_fim"]
+            apenas_ativos = form.cleaned_data["apenas_ativos"]
+            resultado = {
+                "data_inicio": di, "data_fim": df, "apenas_ativos": apenas_ativos,
+                "linhas": _montar_linhas_relatorio_geral(di, df, apenas_ativos),
+            }
+    else:
+        form = RelatorioGeralForm(initial={"apenas_ativos": True})
+    return render(request, "core/relatorio_geral.html", {"form": form, "resultado": resultado})
+
+
+@login_required
+def relatorio_geral_pdf(request):
+    form = RelatorioGeralForm(request.GET)
+    if not form.is_valid():
+        return redirect("relatorio_geral")
+    di = form.cleaned_data["data_inicio"]
+    df = form.cleaned_data["data_fim"]
+    apenas_ativos = form.cleaned_data["apenas_ativos"]
+    linhas = _montar_linhas_relatorio_geral(di, df, apenas_ativos)
+    buffer = gerar_relatorio_geral_mensal(di, df, linhas, apenas_ativos)
+    resp = HttpResponse(buffer, content_type="application/pdf")
+    resp["Content-Disposition"] = f'inline; filename="relatorio_geral_{di}_{df}.pdf"'
     return resp
 
 
