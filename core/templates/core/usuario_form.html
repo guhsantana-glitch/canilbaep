@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">{% if usuario %}Editar{% else %}Novo{% endif %}</span>
+<h1>{% if usuario %}Editar usuário: {{ usuario.username }}{% else %}Novo usuário{% endif %}</h1>
+<form method="post" class="card">
+  {% csrf_token %}
+  <div class="form-linha">
+    <label>Nome de usuário (login)</label>
+    <input type="text" name="username" value="{{ usuario.username|default:'' }}" required>
+  </div>
+  <div class="form-linha">
+    <label>Nome completo</label>
+    <input type="text" name="first_name" value="{{ usuario.first_name|default:'' }}">
+  </div>
+  <div class="form-linha">
+    <label>{% if usuario %}Nova senha (deixe em branco para manter a atual){% else %}Senha{% endif %}</label>
+    <input type="password" name="password">
+  </div>
+  <div class="form-linha">
+    <label><input type="checkbox" name="is_staff" style="width:auto;display:inline-block;" {% if usuario.is_staff %}checked{% endif %}> Acesso ao painel Admin (/admin/)</label>
+  </div>
+  {% if erro %}<p style="color:#8a3324;font-size:0.85rem;">{{ erro }}</p>{% endif %}
+  <button class="btn" type="submit">Salvar</button>
+  <a href="{% url 'lista_usuarios' %}" class="btn btn-secundario">Cancelar</a>
+</form>
+{% endblock %}

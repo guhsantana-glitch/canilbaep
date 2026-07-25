@@ -1,6 +1,7 @@
 """Geração de PDFs: ficha para porta do box e relatório mensal do cão."""
 
 from io import BytesIO
+from pathlib import Path
 from reportlab.lib.pagesizes import A5, A4
 from reportlab.lib.units import cm
 from reportlab.lib import colors
@@ -9,6 +10,31 @@ from reportlab.platypus import (
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
+
+# Coloque aqui o logotipo do canil (enviado pelo usuário) para que apareça
+# automaticamente nos PDFs. Aceita .png ou .jpg. Se o arquivo não existir,
+# o cabeçalho é gerado normalmente, apenas em texto.
+BASE_DIR = Path(__file__).resolve().parent.parent
+PASTA_LOGOS = BASE_DIR / "static" / "logos"
+LOGO_CANIL = PASTA_LOGOS / "logo_canil.png"
+
+
+def _cabecalho_com_logo(story):
+    """Adiciona o logotipo do canil centralizado no topo, se existir."""
+    from PIL import Image as PILImage
+
+    if not LOGO_CANIL.exists():
+        return
+    try:
+        largura_original, altura_original = PILImage.open(LOGO_CANIL).size
+        altura_alvo = 3 * cm
+        largura_alvo = altura_alvo * (largura_original / altura_original)
+        imagem = Image(str(LOGO_CANIL), width=largura_alvo, height=altura_alvo)
+        imagem.hAlign = "CENTER"
+        story.append(imagem)
+        story.append(Spacer(1, 6))
+    except Exception:
+        pass
 
 
 def gerar_ficha_box(cao):
@@ -30,6 +56,7 @@ def gerar_ficha_box(cao):
     label_style = ParagraphStyle("Label", parent=styles["Normal"], fontSize=12, leading=18)
 
     story = []
+    _cabecalho_com_logo(story)
     story.append(Paragraph("10° BAEP - CANIL", subtitulo_style))
     story.append(Spacer(1, 6))
     story.append(Paragraph(cao.nome.upper(), titulo_style))
@@ -79,6 +106,7 @@ def gerar_relatorio_mensal(cao, data_inicio, data_fim, pesagens, vacinas, medica
     styles = getSampleStyleSheet()
     story = []
 
+    _cabecalho_com_logo(story)
     story.append(Paragraph("10° BAEP - Relatório Mensal do Canil", styles["Title"]))
     story.append(Paragraph(
         f"Cão: <b>{cao.nome}</b> &nbsp;|&nbsp; Período: "
@@ -111,9 +139,9 @@ def gerar_relatorio_mensal(cao, data_inicio, data_fim, pesagens, vacinas, medica
         dados = [["Tipo", "Aplicação", "Próxima dose", "Veterinário"]]
         for v in vacinas:
             dados.append([
-                v.tipo, v.data_aplicacao.strftime("%d/%m/%Y"),
+                v.tipo.nome, v.data_aplicacao.strftime("%d/%m/%Y"),
                 v.data_proxima_dose.strftime("%d/%m/%Y") if v.data_proxima_dose else "-",
-                v.veterinario or "-"
+                v.veterinario.nome if v.veterinario else "-"
             ])
         t = Table(dados, colWidths=[4 * cm, 3.5 * cm, 3.5 * cm, 4 * cm])
         t.setStyle(TableStyle([

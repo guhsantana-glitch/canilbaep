@@ -1,0 +1,8 @@
+Coloque aqui o logotipo do canil que será usado nos PDFs (ficha do box e relatório mensal):
+
+- logo_canil.png  -> logotipo do canil (o escudo azul "Ações Especiais com Cães")
+
+Formato recomendado: PNG com fundo transparente.
+Assim que o arquivo estiver aqui com esse nome exato, ele aparece
+automaticamente, centralizado, no topo dos PDFs gerados pelo sistema. Se o
+arquivo não existir, o PDF é gerado normalmente, só que sem o logotipo.

@@ -22,36 +22,70 @@
 
 <h2>Pesagens <a href="{% url 'pesagem_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
 <table>
-  <tr><th>Data</th><th>Peso (kg)</th><th>Observações</th></tr>
-  {% for p in pesagens %}<tr><td>{{ p.data|date:"d/m/Y" }}</td><td>{{ p.peso_kg }}</td><td>{{ p.observacoes|default:"-" }}</td></tr>
-  {% empty %}<tr><td colspan="3">Nenhuma pesagem registrada.</td></tr>{% endfor %}
+  <tr><th>Data</th><th>Peso (kg)</th><th>Observações</th><th></th></tr>
+  {% for p in pesagens %}<tr><td>{{ p.data|date:"d/m/Y" }}</td><td>{{ p.peso_kg }}</td><td>{{ p.observacoes|default:"-" }}</td>
+    <td><a href="{% url 'pesagem_editar' cao.pk p.pk %}">Editar</a> &middot; <a href="{% url 'pesagem_excluir' cao.pk p.pk %}">Excluir</a></td></tr>
+  {% empty %}<tr><td colspan="4">Nenhuma pesagem registrada.</td></tr>{% endfor %}
 </table>
 
 <h2>Vacinas <a href="{% url 'vacina_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
 <table>
-  <tr><th>Tipo</th><th>Aplicação</th><th>Próxima dose</th><th>Veterinário</th></tr>
-  {% for v in vacinas %}<tr><td>{{ v.tipo }}</td><td>{{ v.data_aplicacao|date:"d/m/Y" }}</td><td>{{ v.data_proxima_dose|date:"d/m/Y"|default:"-" }}</td><td>{{ v.veterinario|default:"-" }}</td></tr>
-  {% empty %}<tr><td colspan="4">Nenhuma vacina registrada.</td></tr>{% endfor %}
+  <tr><th>Tipo</th><th>Aplicação</th><th>Próxima dose</th><th>Veterinário</th><th></th></tr>
+  {% for v in vacinas %}<tr><td>{{ v.tipo.nome }}</td><td>{{ v.data_aplicacao|date:"d/m/Y" }}</td><td>{{ v.data_proxima_dose|date:"d/m/Y"|default:"-" }}</td><td>{{ v.veterinario.nome|default:"-" }}</td>
+    <td><a href="{% url 'vacina_editar' cao.pk v.pk %}">Editar</a> &middot; <a href="{% url 'vacina_excluir' cao.pk v.pk %}">Excluir</a></td></tr>
+  {% empty %}<tr><td colspan="5">Nenhuma vacina registrada.</td></tr>{% endfor %}
 </table>
 
 <h2>Medicamentos <a href="{% url 'medicamento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
 <table>
-  <tr><th>Medicamento</th><th>Dosagem</th><th>Início</th><th>Fim</th><th>Motivo</th></tr>
-  {% for m in medicamentos %}<tr><td>{{ m.nome }}</td><td>{{ m.dosagem }}</td><td>{{ m.data_inicio|date:"d/m/Y" }}</td><td>{{ m.data_fim|date:"d/m/Y"|default:"-" }}</td><td>{{ m.motivo|default:"-" }}</td></tr>
-  {% empty %}<tr><td colspan="5">Nenhum medicamento registrado.</td></tr>{% endfor %}
+  <tr><th>Medicamento</th><th>Dosagem</th><th>Início</th><th>Fim</th><th>Motivo</th><th>Veterinário</th><th></th></tr>
+  {% for m in medicamentos %}<tr><td>{{ m.nome }}</td><td>{{ m.dosagem }}</td><td>{{ m.data_inicio|date:"d/m/Y" }}</td><td>{{ m.data_fim|date:"d/m/Y"|default:"-" }}</td><td>{{ m.motivo|default:"-" }}</td><td>{{ m.veterinario.nome|default:"-" }}</td>
+    <td><a href="{% url 'medicamento_editar' cao.pk m.pk %}">Editar</a> &middot; <a href="{% url 'medicamento_excluir' cao.pk m.pk %}">Excluir</a></td></tr>
+  {% empty %}<tr><td colspan="7">Nenhum medicamento registrado.</td></tr>{% endfor %}
 </table>
+
+<h2>Evolução do treinamento (nota por avaliação)</h2>
+<div class="card">
+  {% if evolucao_json %}
+  <canvas id="graficoEvolucao" height="90"></canvas>
+  {{ evolucao_json|json_script:"dados-evolucao" }}
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script>
+    const dados = JSON.parse(document.getElementById('dados-evolucao').textContent);
+    new Chart(document.getElementById('graficoEvolucao'), {
+      type: 'line',
+      data: {
+        labels: dados.map(d => d.data),
+        datasets: [{
+          label: 'Nota de avaliação',
+          data: dados.map(d => d.nota),
+          borderColor: '#33513f',
+          backgroundColor: 'rgba(51,81,63,0.15)',
+          tension: 0.25,
+          fill: true,
+        }]
+      },
+      options: { scales: { y: { min: 0, max: 10 } } }
+    });
+  </script>
+  {% else %}
+  <p style="color:#666;font-size:0.88rem;">Nenhuma nota de avaliação registrada ainda. Preencha o campo "Nota de avaliação" ao lançar um treinamento para visualizar o gráfico de evolução aqui.</p>
+  {% endif %}
+</div>
 
 <h2>Treinamentos <a href="{% url 'treinamento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
 <table>
-  <tr><th>Data</th><th>Etapa</th><th>Descrição</th><th>Resultado</th><th>Instrutor</th></tr>
-  {% for t in treinamentos %}<tr><td>{{ t.data|date:"d/m/Y" }}</td><td>{{ t.get_etapa_display }}</td><td>{{ t.descricao|truncatechars:60 }}</td><td>{{ t.resultado|default:"-" }}</td><td>{{ t.instrutor|default:"-" }}</td></tr>
-  {% empty %}<tr><td colspan="5">Nenhum treinamento registrado.</td></tr>{% endfor %}
+  <tr><th>Data</th><th>Etapa</th><th>Descrição</th><th>Resultado</th><th>Nota</th><th>Instrutor</th><th></th></tr>
+  {% for t in treinamentos %}<tr><td>{{ t.data|date:"d/m/Y" }}</td><td>{{ t.get_etapa_display }}</td><td>{{ t.descricao|truncatechars:60 }}</td><td>{{ t.resultado|default:"-" }}</td><td>{{ t.nota_avaliacao|default:"-" }}</td><td>{{ t.instrutor|default:"-" }}</td>
+    <td><a href="{% url 'treinamento_editar' cao.pk t.pk %}">Editar</a> &middot; <a href="{% url 'treinamento_excluir' cao.pk t.pk %}">Excluir</a></td></tr>
+  {% empty %}<tr><td colspan="7">Nenhum treinamento registrado.</td></tr>{% endfor %}
 </table>
 
 <h2>Documentos e exames <a href="{% url 'documento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Anexar</a></h2>
 <table>
-  <tr><th>Tipo</th><th>Título</th><th>Data</th><th>Arquivo</th></tr>
-  {% for d in documentos %}<tr><td>{{ d.get_tipo_display }}</td><td>{{ d.titulo }}</td><td>{{ d.data_documento|date:"d/m/Y"|default:"-" }}</td><td><a href="{{ d.arquivo.url }}" target="_blank">Abrir</a></td></tr>
-  {% empty %}<tr><td colspan="4">Nenhum documento anexado.</td></tr>{% endfor %}
+  <tr><th>Tipo</th><th>Título</th><th>Data</th><th>Arquivo</th><th></th></tr>
+  {% for d in documentos %}<tr><td>{{ d.get_tipo_display }}</td><td>{{ d.titulo }}</td><td>{{ d.data_documento|date:"d/m/Y"|default:"-" }}</td><td><a href="{{ d.arquivo.url }}" target="_blank">Abrir</a></td>
+    <td><a href="{% url 'documento_excluir' cao.pk d.pk %}">Excluir</a></td></tr>
+  {% empty %}<tr><td colspan="5">Nenhum documento anexado.</td></tr>{% endfor %}
 </table>
 {% endblock %}

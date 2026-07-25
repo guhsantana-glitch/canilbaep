@@ -1,89 +1,34 @@
-from django.contrib.auth import login as auth_login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.models import User
-from django.contrib.auth.views import LoginView
+from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponse
 from django.urls import reverse
+from django.db.models import Q
 
-from .models import Cao, Condutor, Vacina, Medicamento, Pesagem, Treinamento, Documento
+from .models import (
+    Cao, Condutor, Vacina, Medicamento, Pesagem, Treinamento, Documento,
+    Veterinario, TipoVacina,
+)
 from .forms import (
     CaoForm, CondutorForm, VacinaForm, MedicamentoForm,
     PesagemForm, TreinamentoForm, DocumentoForm, RelatorioMensalForm,
+    VeterinarioForm, TipoVacinaForm,
 )
 from .pdf_utils import gerar_ficha_box, gerar_relatorio_mensal
-from . import govbr
 
 
 class CanilLoginView(LoginView):
     template_name = "core/login.html"
 
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        ctx["govbr_disponivel"] = govbr.is_configured()
-        return ctx
+
+class CanilLogoutView(LogoutView):
+    next_page = "login"
 
 
-def govbr_login(request):
-    """Redireciona o usuário para a tela de autenticação do gov.br."""
-    if not govbr.is_configured():
-        messages.error(request, "Login com gov.br ainda não foi configurado neste ambiente.")
-        return redirect("login")
-    return redirect(govbr.montar_url_autorizacao(request))
-
-
-def govbr_callback(request):
-    """Recebe o retorno do gov.br, valida state, troca code por token e loga o usuário."""
-    erro = request.GET.get("error")
-    if erro:
-        messages.error(request, f"Falha na autenticação gov.br: {erro}")
-        return redirect("login")
-
-    code = request.GET.get("code")
-    state_recebido = request.GET.get("state")
-    state_esperado = request.session.get("govbr_state")
-    code_verifier = request.session.get("govbr_code_verifier")
-
-    if not code or not state_recebido or state_recebido != state_esperado:
-        return HttpResponseBadRequest("Requisição inválida ou expirada. Tente novamente.")
-
-    try:
-        token_data = govbr.trocar_code_por_token(code, code_verifier)
-        userinfo = govbr.obter_userinfo(token_data["access_token"])
-    except Exception:
-        messages.error(request, "Não foi possível concluir a autenticação com o gov.br. Tente novamente.")
-        return redirect("login")
-
-    cpf = userinfo.get("sub")
-    nome = userinfo.get("name", cpf)
-    email = userinfo.get("email", "")
-
-    user, criado = User.objects.get_or_create(
-        username=cpf,
-        defaults={"first_name": nome, "email": email},
-    )
-    if criado:
-        user.set_unusable_password()
-        user.save()
-        messages.info(request, "Primeiro acesso via gov.br. Um administrador precisa vincular seu usuário a um Condutor, se aplicável.")
-
-    for chave in ("govbr_state", "govbr_nonce", "govbr_code_verifier"):
-        request.session.pop(chave, None)
-
-    auth_login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-    return redirect("lista_caes")
-
-
-def govbr_logout(request):
-    """Encerra a sessão local e, se configurado, também a sessão no gov.br."""
-    from django.contrib.auth import logout as auth_logout
-    auth_logout(request)
-    if govbr.is_configured():
-        retorno = request.build_absolute_uri(reverse("login"))
-        return redirect(govbr.montar_url_logout(retorno))
-    return redirect("login")
-
+def eh_superusuario(user):
+    return user.is_superuser
 
 
 # ---------- Cães ----------
@@ -106,13 +51,19 @@ def lista_caes(request):
 @login_required
 def ficha_cao(request, pk):
     cao = get_object_or_404(Cao, pk=pk)
+    treinamentos = cao.treinamentos.all()
+    evolucao = [
+        {"data": t.data.strftime("%d/%m/%Y"), "nota": float(t.nota_avaliacao)}
+        for t in treinamentos.exclude(nota_avaliacao__isnull=True).order_by("data")
+    ]
     return render(request, "core/ficha_cao.html", {
         "cao": cao,
         "pesagens": cao.pesagens.all()[:30],
-        "vacinas": cao.vacinas.all(),
-        "medicamentos": cao.medicamentos.all(),
-        "treinamentos": cao.treinamentos.all(),
+        "vacinas": cao.vacinas.select_related("tipo", "veterinario").all(),
+        "medicamentos": cao.medicamentos.select_related("veterinario").all(),
+        "treinamentos": treinamentos,
         "documentos": cao.documentos.all(),
+        "evolucao_json": evolucao,
     })
 
 
@@ -168,9 +119,24 @@ def _registro_form_view(request, pk, cao_pk, Model, FormClass, template, campo_c
     return render(request, template, {"form": form, "cao": cao})
 
 
+def _registro_excluir_view(request, cao_pk, pk, Model):
+    cao = get_object_or_404(Cao, pk=cao_pk)
+    obj = get_object_or_404(Model, pk=pk, cao=cao)
+    if request.method == "POST":
+        obj.delete()
+        messages.success(request, "Registro excluído.")
+        return redirect("ficha_cao", pk=cao.pk)
+    return render(request, "core/confirmar_exclusao.html", {"objeto": obj, "tipo": "registro"})
+
+
 @login_required
 def vacina_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, Vacina, VacinaForm, "core/registro_form.html")
+
+
+@login_required
+def vacina_excluir(request, cao_pk, pk):
+    return _registro_excluir_view(request, cao_pk, pk, Vacina)
 
 
 @login_required
@@ -179,8 +145,18 @@ def medicamento_form_view(request, cao_pk, pk=None):
 
 
 @login_required
+def medicamento_excluir(request, cao_pk, pk):
+    return _registro_excluir_view(request, cao_pk, pk, Medicamento)
+
+
+@login_required
 def pesagem_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, Pesagem, PesagemForm, "core/registro_form.html")
+
+
+@login_required
+def pesagem_excluir(request, cao_pk, pk):
+    return _registro_excluir_view(request, cao_pk, pk, Pesagem)
 
 
 @login_required
@@ -189,8 +165,18 @@ def treinamento_form_view(request, cao_pk, pk=None):
 
 
 @login_required
+def treinamento_excluir(request, cao_pk, pk):
+    return _registro_excluir_view(request, cao_pk, pk, Treinamento)
+
+
+@login_required
 def documento_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, Documento, DocumentoForm, "core/registro_form.html")
+
+
+@login_required
+def documento_excluir(request, cao_pk, pk):
+    return _registro_excluir_view(request, cao_pk, pk, Documento)
 
 
 # ---------- Condutores ----------
@@ -223,6 +209,70 @@ def condutor_excluir(request, pk):
         messages.success(request, "Condutor excluído.")
         return redirect("lista_condutores")
     return render(request, "core/confirmar_exclusao.html", {"objeto": condutor, "tipo": "condutor"})
+
+
+# ---------- Veterinários ----------
+
+@login_required
+def lista_veterinarios(request):
+    veterinarios = Veterinario.objects.all()
+    return render(request, "core/lista_veterinarios.html", {"veterinarios": veterinarios})
+
+
+@login_required
+def veterinario_form_view(request, pk=None):
+    veterinario = get_object_or_404(Veterinario, pk=pk) if pk else None
+    if request.method == "POST":
+        form = VeterinarioForm(request.POST, instance=veterinario)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Veterinário salvo com sucesso.")
+            return redirect("lista_veterinarios")
+    else:
+        form = VeterinarioForm(instance=veterinario)
+    return render(request, "core/veterinario_form.html", {"form": form, "veterinario": veterinario})
+
+
+@login_required
+def veterinario_excluir(request, pk):
+    veterinario = get_object_or_404(Veterinario, pk=pk)
+    if request.method == "POST":
+        veterinario.delete()
+        messages.success(request, "Veterinário excluído.")
+        return redirect("lista_veterinarios")
+    return render(request, "core/confirmar_exclusao.html", {"objeto": veterinario, "tipo": "veterinário"})
+
+
+# ---------- Tipos de vacina (catálogo) ----------
+
+@login_required
+def lista_tipos_vacina(request):
+    tipos = TipoVacina.objects.all()
+    return render(request, "core/lista_tipos_vacina.html", {"tipos": tipos})
+
+
+@login_required
+def tipo_vacina_form_view(request, pk=None):
+    tipo = get_object_or_404(TipoVacina, pk=pk) if pk else None
+    if request.method == "POST":
+        form = TipoVacinaForm(request.POST, instance=tipo)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Tipo de vacina salvo com sucesso.")
+            return redirect("lista_tipos_vacina")
+    else:
+        form = TipoVacinaForm(instance=tipo)
+    return render(request, "core/tipo_vacina_form.html", {"form": form, "tipo": tipo})
+
+
+@login_required
+def tipo_vacina_excluir(request, pk):
+    tipo = get_object_or_404(TipoVacina, pk=pk)
+    if request.method == "POST":
+        tipo.delete()
+        messages.success(request, "Tipo de vacina excluído.")
+        return redirect("lista_tipos_vacina")
+    return render(request, "core/confirmar_exclusao.html", {"objeto": tipo, "tipo": "tipo de vacina"})
 
 
 # ---------- Relatório mensal ----------
@@ -264,3 +314,62 @@ def relatorio_mensal_pdf(request):
     resp = HttpResponse(buffer, content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="relatorio_{cao.nome}_{di}_{df}.pdf"'
     return resp
+
+
+# ---------- Usuários do sistema (apenas superusuário) ----------
+
+@user_passes_test(eh_superusuario)
+def lista_usuarios(request):
+    usuarios = User.objects.all().order_by("username")
+    return render(request, "core/lista_usuarios.html", {"usuarios": usuarios})
+
+
+@user_passes_test(eh_superusuario)
+def usuario_form_view(request, pk=None):
+    usuario = get_object_or_404(User, pk=pk) if pk else None
+    erro = None
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        first_name = request.POST.get("first_name", "").strip()
+        senha = request.POST.get("password", "")
+        is_staff = request.POST.get("is_staff") == "on"
+
+        if not username:
+            erro = "Informe um nome de usuário."
+        elif User.objects.filter(username=username).exclude(pk=usuario.pk if usuario else None).exists():
+            erro = "Já existe um usuário com esse nome."
+        else:
+            if usuario is None:
+                if not senha:
+                    erro = "Defina uma senha para o novo usuário."
+                else:
+                    usuario = User.objects.create_user(username=username, password=senha, first_name=first_name)
+                    usuario.is_staff = is_staff
+                    usuario.save()
+                    messages.success(request, f"Usuário '{username}' criado com sucesso.")
+                    return redirect("lista_usuarios")
+            else:
+                usuario.username = username
+                usuario.first_name = first_name
+                usuario.is_staff = is_staff
+                if senha:
+                    usuario.set_password(senha)
+                usuario.save()
+                messages.success(request, f"Usuário '{username}' atualizado com sucesso.")
+                return redirect("lista_usuarios")
+
+    return render(request, "core/usuario_form.html", {"usuario": usuario, "erro": erro})
+
+
+@user_passes_test(eh_superusuario)
+def usuario_excluir(request, pk):
+    usuario = get_object_or_404(User, pk=pk)
+    if usuario.is_superuser:
+        messages.error(request, "Não é possível excluir um superusuário por aqui.")
+        return redirect("lista_usuarios")
+    if request.method == "POST":
+        nome = usuario.username
+        usuario.delete()
+        messages.success(request, f"Usuário '{nome}' excluído.")
+        return redirect("lista_usuarios")
+    return render(request, "core/confirmar_exclusao.html", {"objeto": usuario, "tipo": "usuário"})

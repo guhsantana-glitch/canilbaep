@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Administração</span>
+<h1>Usuários do sistema</h1>
+<p style="color:#666;font-size:0.88rem;">Todo usuário criado aqui tem acesso completo às funções do sistema (cães, condutores, veterinários, vacinas, relatórios). Marque "Acesso ao painel Admin" apenas para quem também deve acessar o /admin/ do Django.</p>
+<div class="barra-acoes"><a href="{% url 'usuario_novo' %}" class="btn">+ Novo usuário</a></div>
+<table>
+  <tr><th>Usuário</th><th>Nome</th><th>Acesso ao Admin</th><th>Superusuário</th><th></th></tr>
+  {% for u in usuarios %}
+  <tr>
+    <td>{{ u.username }}</td><td>{{ u.first_name|default:"-" }}</td>
+    <td>{% if u.is_staff %}Sim{% else %}Não{% endif %}</td>
+    <td>{% if u.is_superuser %}Sim{% else %}Não{% endif %}</td>
+    <td>
+      <a href="{% url 'usuario_editar' u.pk %}">Editar</a>
+      {% if not u.is_superuser %} &middot; <a href="{% url 'usuario_excluir' u.pk %}">Excluir</a>{% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

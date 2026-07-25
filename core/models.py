@@ -2,6 +2,37 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+class Veterinario(models.Model):
+    nome = models.CharField("Nome completo", max_length=150)
+    crmv = models.CharField("CRMV (registro profissional)", max_length=30, blank=True)
+    telefone = models.CharField("Telefone", max_length=20, blank=True)
+    email = models.EmailField("E-mail", blank=True)
+    ativo = models.BooleanField("Ativo", default=True)
+    observacoes = models.TextField("Observações", blank=True)
+
+    class Meta:
+        verbose_name = "Veterinário"
+        verbose_name_plural = "Veterinários"
+        ordering = ["nome"]
+
+    def __str__(self):
+        return self.nome
+
+
+class TipoVacina(models.Model):
+    nome = models.CharField("Nome da vacina", max_length=100, unique=True)
+    descricao = models.CharField("Descrição", max_length=200, blank=True)
+    ativo = models.BooleanField("Ativo", default=True)
+
+    class Meta:
+        verbose_name = "Tipo de vacina"
+        verbose_name_plural = "Tipos de vacina"
+        ordering = ["nome"]
+
+    def __str__(self):
+        return self.nome
+
+
 class Condutor(models.Model):
     nome = models.CharField("Nome completo", max_length=150)
     matricula = models.CharField("Matrícula", max_length=30, unique=True)
@@ -78,10 +109,15 @@ class Cao(models.Model):
 
 class Vacina(models.Model):
     cao = models.ForeignKey(Cao, on_delete=models.CASCADE, related_name="vacinas")
-    tipo = models.CharField("Tipo de vacina", max_length=100)
+    tipo = models.ForeignKey(
+        TipoVacina, on_delete=models.PROTECT, related_name="aplicacoes", verbose_name="Tipo de vacina"
+    )
     data_aplicacao = models.DateField("Data de aplicação")
     data_proxima_dose = models.DateField("Próxima dose", null=True, blank=True)
-    veterinario = models.CharField("Veterinário responsável", max_length=100, blank=True)
+    veterinario = models.ForeignKey(
+        Veterinario, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="vacinas_aplicadas", verbose_name="Veterinário responsável"
+    )
     lote = models.CharField("Lote", max_length=60, blank=True)
     observacoes = models.TextField("Observações", blank=True)
 
@@ -101,7 +137,10 @@ class Medicamento(models.Model):
     motivo = models.CharField("Motivo / diagnóstico", max_length=200, blank=True)
     data_inicio = models.DateField("Início do tratamento")
     data_fim = models.DateField("Fim do tratamento", null=True, blank=True)
-    veterinario = models.CharField("Veterinário responsável", max_length=100, blank=True)
+    veterinario = models.ForeignKey(
+        Veterinario, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="medicamentos_prescritos", verbose_name="Veterinário responsável"
+    )
     observacoes = models.TextField("Observações", blank=True)
 
     class Meta:
@@ -142,7 +181,10 @@ class Treinamento(models.Model):
     data = models.DateField("Data")
     etapa = models.CharField("Etapa/Tipo", max_length=20, choices=Etapa.choices)
     descricao = models.TextField("Descrição do treinamento")
-    resultado = models.CharField("Resultado/avaliação", max_length=200, blank=True)
+    resultado = models.CharField("Resultado/avaliação (texto)", max_length=200, blank=True)
+    nota_avaliacao = models.DecimalField(
+        "Nota de avaliação (0 a 10)", max_digits=4, decimal_places=1, null=True, blank=True
+    )
     instrutor = models.CharField("Instrutor responsável", max_length=100, blank=True)
 
     class Meta:

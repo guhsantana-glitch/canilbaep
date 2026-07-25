@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Condutor, Cao, Vacina, Medicamento, Pesagem, Treinamento, Documento
+from .models import Condutor, Cao, Vacina, Medicamento, Pesagem, Treinamento, Documento, Veterinario, TipoVacina
 
 
 class VacinaInline(admin.TabularInline):
@@ -71,3 +71,16 @@ class TreinamentoAdmin(admin.ModelAdmin):
 class DocumentoAdmin(admin.ModelAdmin):
     list_display = ("cao", "tipo", "titulo", "enviado_em")
     list_filter = ("tipo",)
+
+
+@admin.register(Veterinario)
+class VeterinarioAdmin(admin.ModelAdmin):
+    list_display = ("nome", "crmv", "telefone", "ativo")
+    search_fields = ("nome", "crmv")
+    list_filter = ("ativo",)
+
+
+@admin.register(TipoVacina)
+class TipoVacinaAdmin(admin.ModelAdmin):
+    list_display = ("nome", "descricao", "ativo")
+    list_filter = ("ativo",)

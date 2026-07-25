@@ -1,102 +1,76 @@
 # Sistema de Gestão do Canil - 10° BAEP
 
 Sistema web para cadastro e acompanhamento dos cães do canil, condutores,
-histórico de saúde (vacinas, medicamentos, pesagens), treinamentos, documentos
-e geração de fichas/relatórios em PDF. Login local (usuário/senha) com suporte
-pronto para autenticação via **Login Único (gov.br)**.
+veterinários responsáveis, histórico de saúde (vacinas, medicamentos, pesagens),
+treinamentos com gráfico de evolução, documentos e geração de fichas/relatórios em PDF.
+Login local (usuário/senha), com painel próprio para o administrador cadastrar
+outros usuários sem depender do /admin/ do Django.
+
+Desenvolvido pelo SD PM 161844-0 Gava.
+
+## Novidades desta versão
+
+- Corrigido bug em que as datas (nascimento/ingresso) apareciam em branco ao editar um cão
+- Cadastro de **Veterinários responsáveis** (criar, editar, excluir)
+- Catálogo de **Tipos de vacina** (criar, editar, excluir) — usado como lista suspensa ao lançar uma vacina no cão
+- Botões de **editar e excluir** para vacinas, medicamentos, pesagens, treinamentos e documentos na ficha do cão
+- **Gráfico de evolução do treinamento** (nota de 0 a 10 por avaliação, lançada em cada treinamento)
+- Espaço reservado para os **logotipos do canil e do 10° BAEP** nos PDFs (`static/logos/`, veja o arquivo `LEIA-ME.txt` lá dentro)
+- Rodapé do sistema com o crédito de desenvolvimento
+- **Login gov.br removido** — autenticação apenas local
+- **Painel de usuários** (menu "Usuários", visível só para superusuário): cria/edita/exclui usuários do sistema. Todo usuário criado tem acesso completo às funções do sistema, mas só entra no `/admin/` do Django se a caixinha "Acesso ao painel Admin" for marcada
 
 ## 1. Rodando localmente (Windows, Mac ou Linux)
 
 Pré-requisito: Python 3.11+ instalado.
 
 ```bash
-# 1. Entre na pasta do projeto
 cd canil_baep
-
-# 2. Crie e ative um ambiente virtual
 python -m venv venv
 source venv/bin/activate        # Windows: venv\Scripts\activate
-
-# 3. Instale as dependências
 pip install -r requirements.txt
-
-# 4. Configure as variáveis de ambiente (copie o exemplo)
-cp .env.example .env            # Windows: copy .env.example .env
-
-# 5. Crie o banco de dados local
+cp .env.example .env             # Windows: copy .env.example .env
 python manage.py migrate
-
-# 6. Crie seu usuário administrador
 python manage.py createsuperuser
-
-# 7. Rode o servidor
 python manage.py runserver
 ```
 
 Acesse:
 - **http://127.0.0.1:8000/** — tela de login e o sistema
-- **http://127.0.0.1:8000/admin/** — painel administrativo (CRUD rápido, útil para cadastro em massa)
+- **http://127.0.0.1:8000/admin/** — painel administrativo do Django (opcional, uso avançado)
 
-Sem preencher as variáveis `GOVBR_*` no `.env`, o sistema funciona normalmente com
-login usuário/senha — o botão "Entrar com gov.br" só aparece quando configurado.
+> ⚠️ Se você já tinha rodado uma versão anterior deste projeto, o banco de dados
+> mudou (novos campos e tabelas). Apague o arquivo `db.sqlite3` antigo antes do
+> `python manage.py migrate` para começar limpo, ou me avise que te ajudo a
+> migrar os dados existentes sem perder nada.
 
-## 2. Ativando o login com gov.br
+## 2. Cadastrando outros usuários (sem usar o /admin/)
 
-O login com gov.br usa o protocolo oficial **Login Único** (OAuth2 + PKCE),
-já implementado em `core/govbr.py`. Documentação oficial:
-https://acesso.gov.br/roteiro-tecnico/iniciarintegracao.html
-
-**Passo a passo:**
-
-1. Solicite a credencial de teste (ambiente de homologação/staging) em:
-   https://acesso.gov.br/roteiro-tecnico/solicitacaocredencialprocesso.html
-   — isso é feito pelo órgão (10° BAEP) junto ao gov.br e normalmente exige
-   um responsável técnico e institucional cadastrado.
-2. Ao solicitar, informe a URL de retorno (redirect_uri). Para testes locais,
-   siga a orientação oficial de criar um domínio local de desenvolvimento
-   (ex: `local.canil10baep.gov.br` apontando para `127.0.0.1` no seu arquivo
-   `hosts`), pois o gov.br staging normalmente não aceita `localhost` puro.
-   Já em produção, será a URL real do sistema hospedado, ex:
-   `https://canil.10baep.gov.br/accounts/govbr/callback/`.
-3. Depois de aprovado, você recebe `client_id` e `client_secret`. Preencha no `.env`:
-   ```
-   GOVBR_ENV=staging
-   GOVBR_CLIENT_ID=<recebido do gov.br>
-   GOVBR_CLIENT_SECRET=<recebido do gov.br>
-   GOVBR_REDIRECT_URI=<a mesma URL cadastrada no passo 2>
-   ```
-4. Reinicie o servidor. O botão "Entrar com gov.br" aparece automaticamente
-   na tela de login.
-5. Quando for para produção, troque `GOVBR_ENV=production` e solicite a
-   credencial de produção (mesmo link acima).
-
-**Como funciona no código:**
-- `core/govbr.py` — monta a URL de autorização (com PKCE), troca o código
-  por token e consulta os dados do cidadão (nome, e-mail, CPF).
-- `core/views.py` — `govbr_login`, `govbr_callback`, `govbr_logout`: o usuário
-  é criado/logado automaticamente no primeiro acesso, usando o **CPF como
-  username**. Um administrador pode depois vincular esse usuário a um
-  registro de `Condutor` pelo `/admin/`.
-- O login local continua disponível como alternativa (ex: para contas de
-  serviço/administração que não usam CPF via gov.br).
+1. Entre com o usuário superusuário (criado com `createsuperuser`)
+2. No menu superior, clique em **Usuários**
+3. Clique em **+ Novo usuário**, defina nome de usuário e senha
+4. Deixe a caixinha **"Acesso ao painel Admin"** desmarcada para usuários comuns
+   (eles terão acesso completo a cães, condutores, veterinários, vacinas,
+   relatórios etc., mas não conseguirão entrar em `/admin/`)
+5. Marque essa caixinha apenas para quem você quiser que também acesse o
+   painel administrativo do Django
 
 ## Estrutura
 
-- `core/models.py` — Cão, Condutor, Vacina, Medicamento, Pesagem, Treinamento, Documento
-- `core/views.py` — cadastro, edição, exclusão, ficha do cão, relatório mensal, login gov.br
-- `core/govbr.py` — integração OAuth2/PKCE com o Login Único
-- `core/pdf_utils.py` — geração da ficha para porta do box e do relatório mensal em PDF
+- `core/models.py` — Cão, Condutor, Veterinário, TipoVacina, Vacina, Medicamento, Pesagem, Treinamento, Documento
+- `core/views.py` — cadastro, edição, exclusão, ficha do cão, relatório mensal, gestão de usuários
+- `core/pdf_utils.py` — geração da ficha para porta do box e do relatório mensal em PDF (com espaço para logotipos)
 - `core/templates/` — telas do sistema
+- `static/logos/` — coloque aqui `logo_canil.png` e `logo_baep.png`
 
 ## 3. Deploy (Railway ou Render)
 
 1. Suba este projeto para um repositório no GitHub (o `.gitignore` já exclui
-   `.env`, `db.sqlite3` e mídia local — nunca comite o `.env` real).
+   `.env`, `db.sqlite3` e mídia local).
 2. Crie um novo projeto na plataforma escolhida e conecte o repositório.
 3. Adicione um banco PostgreSQL — a variável `DATABASE_URL` é detectada automaticamente.
-4. Defina as variáveis de ambiente (as mesmas do `.env.example`, com valores reais):
-   - `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`
-   - `GOVBR_ENV`, `GOVBR_CLIENT_ID`, `GOVBR_CLIENT_SECRET`, `GOVBR_REDIRECT_URI` (com a URL de produção)
+4. Defina as variáveis de ambiente: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`,
+   `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`.
 5. O `Procfile` já roda as migrações e sobe o servidor com Gunicorn.
 6. Após o primeiro deploy, crie o superusuário pelo terminal da plataforma:
    ```bash
@@ -106,7 +80,6 @@ https://acesso.gov.br/roteiro-tecnico/iniciarintegracao.html
 ## Próximos incrementos sugeridos
 
 - Alertas automáticos de vacinas/próximas doses vencendo
-- Gráfico de evolução de peso na ficha do cão
+- Gráfico de evolução de peso na ficha do cão (mesmo estilo do gráfico de treinamento)
 - Exportação de relatórios em Excel
-- Vincular automaticamente usuário gov.br → Condutor por CPF/matrícula
-- Permissões por papel (veterinário, condutor, administrador)
+- Login com gov.br (fica pendente para quando a credencial oficial for solicitada)

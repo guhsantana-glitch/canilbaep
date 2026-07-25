@@ -16,10 +16,13 @@ SECRET_KEY = os.environ.get(
     "django-insecure-CHANGE-ME-antes-de-colocar-em-producao"
 )
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = ["canilbaep.onrender.com"]
-CSRF_TRUSTED_ORIGINS = ["https://canilbaep.onrender.com"]
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+CSRF_TRUSTED_ORIGINS = [
+    o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
+]
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -93,15 +96,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'lista_caes'
 LOGOUT_REDIRECT_URL = 'login'
-
-# Login Único (gov.br) - ver core/govbr.py e README.md para instruções de configuração.
-# Deixe em branco para manter apenas o login local (usuário/senha) por enquanto.
-GOVBR_ENV = os.environ.get("GOVBR_ENV", "staging")
-GOVBR_CLIENT_ID = os.environ.get("GOVBR_CLIENT_ID", "")
-GOVBR_CLIENT_SECRET = os.environ.get("GOVBR_CLIENT_SECRET", "")
-GOVBR_REDIRECT_URI = os.environ.get("GOVBR_REDIRECT_URI", "")
-
-SECURE_SSL_REDIRECT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True

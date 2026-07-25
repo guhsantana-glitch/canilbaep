@@ -30,7 +30,7 @@
 <h2>Vacinas</h2>
 <table>
   <tr><th>Tipo</th><th>Data</th></tr>
-  {% for v in resultado.vacinas %}<tr><td>{{ v.tipo }}</td><td>{{ v.data_aplicacao|date:"d/m/Y" }}</td></tr>{% empty %}<tr><td colspan="2">Sem registros.</td></tr>{% endfor %}
+  {% for v in resultado.vacinas %}<tr><td>{{ v.tipo.nome }}</td><td>{{ v.data_aplicacao|date:"d/m/Y" }}</td></tr>{% empty %}<tr><td colspan="2">Sem registros.</td></tr>{% endfor %}
 </table>
 
 <h2>Medicamentos</h2>

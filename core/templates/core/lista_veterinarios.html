@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Equipe técnica</span>
+<h1>Veterinários responsáveis</h1>
+<div class="barra-acoes"><a href="{% url 'veterinario_novo' %}" class="btn">+ Novo veterinário</a></div>
+<table>
+  <tr><th>Nome</th><th>CRMV</th><th>Telefone</th><th>E-mail</th><th>Ativo</th><th></th></tr>
+  {% for v in veterinarios %}
+  <tr>
+    <td>{{ v.nome }}</td><td>{{ v.crmv|default:"-" }}</td><td>{{ v.telefone|default:"-" }}</td>
+    <td>{{ v.email|default:"-" }}</td><td>{% if v.ativo %}Sim{% else %}Não{% endif %}</td>
+    <td><a href="{% url 'veterinario_editar' v.pk %}">Editar</a> &middot; <a href="{% url 'veterinario_excluir' v.pk %}">Excluir</a></td>
+  </tr>
+  {% empty %}<tr><td colspan="6">Nenhum veterinário cadastrado.</td></tr>{% endfor %}
+</table>
+{% endblock %}

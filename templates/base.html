@@ -166,8 +166,11 @@ footer{text-align:center;padding:1.2rem;color:#8a8a7c;font-size:0.78rem;}
   <nav class="menu">
     <a href="{% url 'lista_caes' %}">Cães</a>
     <a href="{% url 'lista_condutores' %}">Condutores</a>
+    <a href="{% url 'lista_veterinarios' %}">Veterinários</a>
+    <a href="{% url 'lista_tipos_vacina' %}">Vacinas</a>
     <a href="{% url 'relatorio_mensal' %}">Relatórios</a>
-    <a href="/admin/">Admin</a>
+    {% if user.is_superuser %}<a href="{% url 'lista_usuarios' %}">Usuários</a>{% endif %}
+    {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
   </nav>
   <div class="usuario-area">
     <span>{{ user.get_username }}</span>
@@ -183,6 +186,6 @@ footer{text-align:center;padding:1.2rem;color:#8a8a7c;font-size:0.78rem;}
   {% endif %}
   {% block content %}{% endblock %}
 </main>
-<footer>Sistema de Gestão do Canil &middot; 10° BAEP</footer>
+<footer>Sistema de Gestão do Canil &middot; 10&deg; BAEP &middot; Desenvolvido pelo SD PM 161844-0 Gava</footer>
 </body>
 </html>
