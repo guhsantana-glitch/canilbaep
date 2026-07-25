@@ -16,12 +16,14 @@ SECRET_KEY = os.environ.get(
     "django-insecure-CHANGE-ME-antes-de-colocar-em-producao"
 )
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "'canilbaep.onrender.com'").split(",")
+ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "canilbaep.onrender.com").split(",")
 CSRF_TRUSTED_ORIGINS = [
-    o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
-]
+    o.strip() for o in os.environ.get(
+        "DJANGO_CSRF_TRUSTED_ORIGINS",
+        "https://canilbaep.onrender.com"
+    ).split(",")]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
