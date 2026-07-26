@@ -51,7 +51,7 @@ def gerar_ficha_box(cao):
     )
     subtitulo_style = ParagraphStyle(
         "Subtitulo", parent=styles["Normal"], alignment=TA_CENTER, fontSize=10,
-        textColor=colors.HexColor("#33513f")
+        textColor=colors.HexColor("#2f8fc4")
     )
     label_style = ParagraphStyle("Label", parent=styles["Normal"], fontSize=12, leading=18)
 
@@ -123,7 +123,7 @@ def gerar_relatorio_mensal(cao, data_inicio, data_fim, pesagens, vacinas, medica
             dados.append([p.data.strftime("%d/%m/%Y"), str(p.peso_kg), p.observacoes or "-"])
         t = Table(dados, colWidths=[3.5 * cm, 3.5 * cm, 8 * cm])
         t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#33513f")),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2f8fc4")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTSIZE", (0, 0), (-1, -1), 9),
             ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#dddddd")),
@@ -145,7 +145,7 @@ def gerar_relatorio_mensal(cao, data_inicio, data_fim, pesagens, vacinas, medica
             ])
         t = Table(dados, colWidths=[4 * cm, 3.5 * cm, 3.5 * cm, 4 * cm])
         t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#33513f")),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2f8fc4")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTSIZE", (0, 0), (-1, -1), 9),
             ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#dddddd")),
@@ -167,7 +167,7 @@ def gerar_relatorio_mensal(cao, data_inicio, data_fim, pesagens, vacinas, medica
             ])
         t = Table(dados, colWidths=[3.5 * cm, 3 * cm, 2.7 * cm, 2.7 * cm, 3.1 * cm])
         t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#33513f")),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2f8fc4")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTSIZE", (0, 0), (-1, -1), 8),
             ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#dddddd")),
@@ -219,7 +219,7 @@ def gerar_relatorio_geral_mensal(data_inicio, data_fim, linhas, apenas_ativos):
     else:
         t = Table(dados, repeatRows=1, colWidths=[3.2*cm, 2*cm, 3.8*cm, 2.6*cm, 2.4*cm, 3.3*cm, 3.7*cm, 3.3*cm])
         t.setStyle(TableStyle([
-            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#33513f")),
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2f8fc4")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
             ("FONTSIZE", (0, 0), (-1, -1), 9),
             ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#dddddd")),
