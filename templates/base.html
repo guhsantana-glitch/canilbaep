@@ -41,11 +41,12 @@ header.topo .marca{
   font-size:1.05rem;
 }
 header.topo .marca .selo{
-  width:34px;height:34px;border-radius:50%;
-  background:var(--azul-medio);
+  width:44px;height:44px;border-radius:6px;
+  background:transparent;
   color:#fff;
   display:flex;align-items:center;justify-content:center;
   font-weight:800;font-size:0.85rem;
+  overflow:hidden;
 }
 nav.menu{
   display:flex;gap:1.2rem;
@@ -160,7 +161,7 @@ footer{text-align:center;padding:1.2rem;color:#8a8a7c;font-size:0.78rem;}
 <body>
 <header class="topo">
   <div class="marca">
-    <div class="selo">10°</div>
+    <div class="selo"><img src="{% static 'logos/logo_canil.png' %}" alt="10° BAEP" style="width:100%;height:100%;object-fit:contain;border-radius:0;"></div>
     <div>SISTEMA CANIL<br><span style="font-weight:400;font-size:0.72rem;opacity:0.8;">10° BAEP</span></div>
   </div>
   {% if user.is_authenticated %}
@@ -187,6 +188,6 @@ footer{text-align:center;padding:1.2rem;color:#8a8a7c;font-size:0.78rem;}
   {% endif %}
   {% block content %}{% endblock %}
 </main>
-<footer>Sistema de Gestão do Canil &middot; 10&deg; BAEP &middot; Desenvolvido pelo SD PM 161844-0 Gava</footer>
+<footer>Sistema de Gestão do Canil &middot; Desenvolvido pelo SD PM 161844-0 Gava</footer>
 </body>
 </html>
