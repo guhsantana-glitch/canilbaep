@@ -31,6 +31,9 @@ header.topo{
   align-items:center;
   justify-content:space-between;
   border-bottom:3px solid var(--azul-medio);
+  flex-wrap:wrap;
+  row-gap:0.6rem;
+  position:relative;
 }
 header.topo .marca{
   display:flex;
@@ -47,26 +50,60 @@ header.topo .marca .selo{
   display:flex;align-items:center;justify-content:center;
   font-weight:800;font-size:0.85rem;
   overflow:hidden;
+  flex-shrink:0;
+}
+.menu-toggle{display:none;}
+.menu-toggle-label{
+  display:none;
+  cursor:pointer;
+  font-size:1.5rem;
+  color:var(--azul-escuro);
+  line-height:1;
+  padding:0.2rem 0.4rem;
 }
 nav.menu{
   display:flex;gap:1.2rem;
   font-size:0.92rem;
+  flex-wrap:wrap;
 }
 nav.menu a{
   color:var(--azul-escuro);
   text-decoration:none;
   padding:0.3rem 0;
   border-bottom:2px solid transparent;
+  white-space:nowrap;
 }
 nav.menu a:hover, nav.menu a.ativo{
   border-bottom:2px solid var(--azul-medio);
 }
 .usuario-area{font-size:0.85rem; display:flex; gap:0.8rem; align-items:center;}
 .usuario-area a{color:var(--azul-escuro);}
+
+@media (max-width: 780px){
+  .menu-toggle-label{display:block;}
+  nav.menu{
+    display:none;
+    width:100%;
+    flex-direction:column;
+    gap:0.9rem;
+    background:var(--azul-claro);
+    padding:1rem 0.5rem;
+    border-radius:6px;
+    order:3;
+  }
+  .menu-toggle:checked ~ nav.menu{display:flex;}
+  header.topo{padding:0.8rem 1rem;}
+}
+
 main{
   max-width:1100px;
   margin:0 auto;
   padding:1.8rem 1.5rem 3rem;
+}
+
+/* Tabelas: em telas estreitas, rolam por dentro (sem empurrar a página inteira) */
+@media (max-width: 780px){
+  table{font-size:0.85rem; display:block; overflow-x:auto; white-space:nowrap; -webkit-overflow-scrolling:touch;}
 }
 h1{font-size:1.5rem;color:var(--azul-escuro);margin-bottom:0.3rem;}
 h2{font-size:1.15rem;color:var(--azul-medio);border-bottom:1px solid var(--borda);padding-bottom:0.4rem;margin-top:2rem;}
@@ -165,6 +202,8 @@ footer{text-align:center;padding:1.2rem;color:#8a8a7c;font-size:0.78rem;}
     <div>SISTEMA CANIL<br><span style="font-weight:400;font-size:0.72rem;opacity:0.8;">10° BAEP</span></div>
   </div>
   {% if user.is_authenticated %}
+  <input type="checkbox" id="menu-toggle" class="menu-toggle">
+  <label for="menu-toggle" class="menu-toggle-label">&#9776;</label>
   <nav class="menu">
     <a href="{% url 'lista_caes' %}">Cães</a>
     <a href="{% url 'lista_condutores' %}">Condutores</a>
