@@ -361,6 +361,24 @@ def gerar_ficha_sanitaria(cao):
     tab.setStyle(estilo_grade)
     story.append(tab)
 
+    story.append(Paragraph("TREINAMENTOS", secao))
+    treinos = [
+        (fmt_data(t.data), t.get_etapa_display(),
+         str(t.nota_avaliacao).replace(".", ",") if t.nota_avaliacao is not None else "",
+         t.instrutor or "", t.descricao or "")
+        for t in cao.treinamentos.order_by("data")
+    ]
+    while len(treinos) < 6:
+        treinos.append(("", "", "", "", ""))
+    dados = [[Paragraph("<b>DATA</b>", cab), Paragraph("<b>ETAPA</b>", cab),
+              Paragraph("<b>NOTA</b>", cab), Paragraph("<b>INSTRUTOR</b>", cab),
+              Paragraph("<b>DESCRIÇÃO</b>", cab)]]
+    for d, etapa, nota, instrutor, descricao in treinos:
+        dados.append([p(d), p(etapa), p(nota), p(instrutor), p(descricao)])
+    tab = Table(dados, colWidths=[2.5 * cm, 3.5 * cm, 1.8 * cm, 3.7 * cm, 6.5 * cm], repeatRows=1)
+    tab.setStyle(estilo_grade)
+    story.append(tab)
+
     story.append(Spacer(1, 12))
     rodape = ParagraphStyle("FS_Rodape", parent=normal, fontSize=7, leading=9, alignment=TA_CENTER)
     story.append(Paragraph(
