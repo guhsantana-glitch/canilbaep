@@ -1,7 +1,8 @@
 from django import forms
 from .models import (
     Cao, Condutor, Vacina, Medicamento, Pesagem, Treinamento, Documento,
-    Veterinario, TipoVacina,
+    Veterinario, TipoVacina, Vermifugacao, Ectoparasita, OcorrenciaSaude,
+    VisitaTecnica,
 )
 
 ISO_DATE = "%Y-%m-%d"
@@ -22,7 +23,8 @@ class CaoForm(forms.ModelForm):
         model = Cao
         fields = [
             "nome", "raca", "sexo", "microchip", "data_nascimento", "data_ingresso",
-            "status", "condutor_atual", "box", "foto", "origem", "observacoes",
+            "status", "condutor_atual", "box", "foto", "origem",
+            "especialidade", "numero_cro_cpr", "registro_sbcpa", "observacoes",
         ]
         widgets = {"observacoes": forms.Textarea(attrs={"rows": 3})}
 
@@ -87,6 +89,38 @@ class DocumentoForm(forms.ModelForm):
     class Meta:
         model = Documento
         fields = ["tipo", "titulo", "arquivo", "data_documento"]
+
+
+class VermifugacaoForm(forms.ModelForm):
+    data_aplicacao = DataISOField(label="Data de aplicação")
+
+    class Meta:
+        model = Vermifugacao
+        fields = ["vermifugo", "data_aplicacao", "veterinario", "lote", "observacoes"]
+
+
+class EctoparasitaForm(forms.ModelForm):
+    data_aplicacao = DataISOField(label="Aplicação em")
+
+    class Meta:
+        model = Ectoparasita
+        fields = ["procedimento", "data_aplicacao", "veterinario", "observacoes"]
+
+
+class OcorrenciaSaudeForm(forms.ModelForm):
+    data = DataISOField(label="Data")
+
+    class Meta:
+        model = OcorrenciaSaude
+        fields = ["anormalidade", "data", "veterinario", "medicamento", "observacoes"]
+
+
+class VisitaTecnicaForm(forms.ModelForm):
+    data = DataISOField(label="Data da visita")
+
+    class Meta:
+        model = VisitaTecnica
+        fields = ["data", "medico_veterinario", "observacoes"]
 
 
 class RelatorioMensalForm(forms.Form):

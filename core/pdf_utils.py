@@ -230,3 +230,145 @@ def gerar_relatorio_geral_mensal(data_inicio, data_fim, linhas, apenas_ativos):
     doc.build(story)
     buffer.seek(0)
     return buffer
+
+
+def gerar_ficha_sanitaria(cao):
+    """Ficha Sanitária individual do 10º BAEP (replica o papel oficial).
+
+    Capa: cabeçalho + dados do cão + imunização + vermifugação + peso.
+    Verso: ectoparasitas + ocorrências de saúde + visitas técnicas.
+    Tabelas são completadas com linhas em branco para impressão.
+    """
+    from datetime import date
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        topMargin=1.2 * cm, bottomMargin=1.2 * cm,
+        leftMargin=1.2 * cm, rightMargin=1.2 * cm,
+    )
+    styles = getSampleStyleSheet()
+    titulo = ParagraphStyle("FS_Titulo", parent=styles["Title"], fontSize=11, leading=13, alignment=TA_CENTER)
+    secao = ParagraphStyle("FS_Secao", parent=styles["Heading3"], fontSize=10, leading=12, alignment=TA_CENTER, spaceBefore=8, spaceAfter=4)
+    normal = styles["Normal"]
+    normal.fontSize = 8
+    normal.leading = 10
+    cel = ParagraphStyle("FS_Cel", parent=normal, fontSize=8, leading=10)
+    cab = ParagraphStyle("FS_Cab", parent=normal, fontSize=8, leading=10, textColor=colors.black)
+
+    def p(txt):
+        return Paragraph(txt or "-", cel)
+
+    def fmt_data(d):
+        return d.strftime("%d/%m/%Y") if d else "-"
+
+    story = []
+    _cabecalho_com_logo(story)
+    story.append(Paragraph(
+        "POLÍCIA MILITAR DO ESTADO DE SÃO PAULO<br/>"
+        "COMANDO DE POLICIAMENTO DO INTERIOR – 9<br/>"
+        "10º BATALHÃO DE AÇÕES ESPECIAIS DE POLÍCIA<br/>"
+        f"BAEP - UNIDADE K-9 - SUMARÉ<br/>FICHA SANITÁRIA {date.today().year}",
+        titulo,
+    ))
+    story.append(Spacer(1, 8))
+
+    estilo_grade = TableStyle([
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.black),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("TOPPADDING", (0, 0), (-1, -1), 3),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+    ])
+
+    dados_cao = [
+        [Paragraph("<b>CÃO</b>", cab), p(cao.nome), Paragraph("<b>RAÇA</b>", cab), p(cao.raca)],
+        [Paragraph("<b>SEXO</b>", cab), p(cao.get_sexo_display()), Paragraph("<b>INCL. NO PLANTEL</b>", cab), p(fmt_data(cao.data_ingresso))],
+        [Paragraph("<b>D/NASC</b>", cab), p(fmt_data(cao.data_nascimento)), Paragraph("<b>ESPECIALIDADE</b>", cab), p(cao.especialidade)],
+        [Paragraph("<b>Nº CRO/CPR</b>", cab), p(cao.numero_cro_cpr), Paragraph("<b>ADESTRADOR</b>", cab), p(cao.condutor_atual.nome if cao.condutor_atual else "")],
+        [Paragraph("<b>CHIP</b>", cab), p(cao.microchip), Paragraph("<b>REGISTRO SBCPA</b>", cab), p(cao.registro_sbcpa)],
+    ]
+    t = Table(dados_cao, colWidths=[3 * cm, 6 * cm, 3.5 * cm, 5.5 * cm])
+    t.setStyle(estilo_grade)
+    story.append(t)
+
+    def tabela_dupla(titulo_secao, cab_esq, cab_dir, linhas, minimo=8):
+        story.append(Paragraph(titulo_secao, secao))
+        meio = (len(linhas) + 1) // 2
+        esq = linhas[:meio]
+        dir_ = linhas[meio:]
+        while len(esq) < (minimo + 1) // 2:
+            esq.append(("", ""))
+        while len(dir_) < minimo // 2:
+            dir_.append(("", ""))
+        dados = [[Paragraph(f"<b>{cab_esq}</b>", cab), Paragraph(f"<b>{cab_dir}</b>", cab),
+                  Paragraph(f"<b>{cab_esq}</b>", cab), Paragraph(f"<b>{cab_dir}</b>", cab)]]
+        for i in range(max(len(esq), len(dir_))):
+            a = esq[i] if i < len(esq) else ("", "")
+            b = dir_[i] if i < len(dir_) else ("", "")
+            dados.append([p(a[0]), p(a[1]), p(b[0]), p(b[1])])
+        tab = Table(dados, colWidths=[5 * cm, 4 * cm, 5 * cm, 4 * cm], repeatRows=1)
+        tab.setStyle(estilo_grade)
+        story.append(tab)
+
+    vacinas = [(v.tipo.nome, fmt_data(v.data_aplicacao)) for v in cao.vacinas.select_related("tipo").order_by("data_aplicacao")]
+    tabela_dupla("QUADRO DE IMUNIZAÇÃO", "NOME DA VACINA", "DATA APLICAÇÃO", vacinas)
+
+    vermes = [(v.vermifugo, fmt_data(v.data_aplicacao)) for v in cao.vermifugacoes.order_by("data_aplicacao")]
+    tabela_dupla("QUADRO DE VERMIFUGAÇÃO", "VERMÍFUGO", "DATA APLICAÇÃO", vermes)
+
+    pesos = [(fmt_data(v.data), str(v.peso_kg).replace(".", ",")) for v in cao.pesagens.order_by("data")]
+    tabela_dupla("CONTROLE DE PESO", "DATA DA PESAGEM", "PESO / Kg", pesos, minimo=6)
+
+    ecto = [(e.procedimento, fmt_data(e.data_aplicacao)) for e in cao.ectoparasitas.order_by("data_aplicacao")]
+    tabela_dupla("CONTROLE DE ECTOPARASITAS", "PROCEDIMENTO", "APLICAÇÃO EM", ecto, minimo=10)
+
+    story.append(Paragraph("OBSERVAÇÕES", secao))
+    story.append(Paragraph("Na alteração da saúde do animal, constar a anormalidade, data, médico veterinário e medicamento.", normal))
+    story.append(Spacer(1, 4))
+    ocorr = [
+        (o.anormalidade, fmt_data(o.data),
+         o.veterinario.nome if o.veterinario else "", o.medicamento or "")
+        for o in cao.ocorrencias_saude.select_related("veterinario").order_by("data")
+    ]
+    while len(ocorr) < 6:
+        ocorr.append(("", "", "", ""))
+    dados = [[Paragraph("<b>ANORMALIDADE</b>", cab), Paragraph("<b>DATA</b>", cab),
+              Paragraph("<b>MÉD. VETERINÁRIO</b>", cab), Paragraph("<b>MEDICAMENTO</b>", cab)]]
+    for a, d, v, m in ocorr:
+        dados.append([p(a), p(d), p(v), p(m)])
+    tab = Table(dados, colWidths=[6 * cm, 3 * cm, 5 * cm, 4 * cm], repeatRows=1)
+    tab.setStyle(estilo_grade)
+    story.append(tab)
+
+    story.append(Paragraph("OUTRAS OBSERVAÇÕES", secao))
+    outras = (cao.observacoes or "").strip() or "—"
+    tab = Table([[p(outras)]], colWidths=[18 * cm])
+    tab.setStyle(estilo_grade)
+    story.append(tab)
+
+    story.append(Paragraph("VISITA TÉCNICA MÉDICO VETERINÁRIO 5º BPChoque", secao))
+    visitas = [(fmt_data(v.data), v.medico_veterinario) for v in cao.visitas_tecnicas.order_by("data")]
+    while len(visitas) < 5:
+        visitas.append(("", ""))
+    dados = [[Paragraph("<b>VISITA TÉCNICA MÉD. VETERINÁRIO CPChq</b>", cab),
+              Paragraph("<b>DATA</b>", cab),
+              Paragraph("<b>POST/GRAD/MÉDICO VETERINÁRIO</b>", cab)]]
+    for d, v in visitas:
+        dados.append([p("VISITA TÉCNICA MÉD. VETERINÁRIO CPChq"), p(d), p(v)])
+    tab = Table(dados, colWidths=[7 * cm, 3.5 * cm, 7.5 * cm], repeatRows=1)
+    tab.setStyle(estilo_grade)
+    story.append(tab)
+
+    story.append(Spacer(1, 12))
+    rodape = ParagraphStyle("FS_Rodape", parent=normal, fontSize=7, leading=9, alignment=TA_CENTER)
+    story.append(Paragraph(
+        '"Nós, Policiais Militares, sob a proteção de Deus, estamos compromissados com a Defesa da Vida, '
+        "da Integridade Física e da Dignidade da Pessoa Humana\"",
+        rodape,
+    ))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer

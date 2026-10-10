@@ -1,5 +1,9 @@
 from django.contrib import admin
-from .models import Condutor, Cao, Vacina, Medicamento, Pesagem, Treinamento, Documento, Veterinario, TipoVacina
+from .models import (
+    Condutor, Cao, Vacina, Medicamento, Pesagem, Treinamento, Documento,
+    Veterinario, TipoVacina, Vermifugacao, Ectoparasita, OcorrenciaSaude,
+    VisitaTecnica,
+)
 
 
 class VacinaInline(admin.TabularInline):
@@ -27,12 +31,32 @@ class DocumentoInline(admin.TabularInline):
     extra = 0
 
 
+class VermifugacaoInline(admin.TabularInline):
+    model = Vermifugacao
+    extra = 0
+
+
+class EctoparasitaInline(admin.TabularInline):
+    model = Ectoparasita
+    extra = 0
+
+
+class OcorrenciaSaudeInline(admin.TabularInline):
+    model = OcorrenciaSaude
+    extra = 0
+
+
+class VisitaTecnicaInline(admin.TabularInline):
+    model = VisitaTecnica
+    extra = 0
+
+
 @admin.register(Cao)
 class CaoAdmin(admin.ModelAdmin):
     list_display = ("nome", "raca", "sexo", "status", "condutor_atual", "box", "data_ingresso")
     list_filter = ("status", "sexo", "raca")
     search_fields = ("nome", "microchip", "box")
-    inlines = [PesagemInline, VacinaInline, MedicamentoInline, TreinamentoInline, DocumentoInline]
+    inlines = [PesagemInline, VacinaInline, VermifugacaoInline, EctoparasitaInline, OcorrenciaSaudeInline, VisitaTecnicaInline, MedicamentoInline, TreinamentoInline, DocumentoInline]
 
 
 @admin.register(Condutor)
@@ -78,6 +102,30 @@ class VeterinarioAdmin(admin.ModelAdmin):
     list_display = ("nome", "crmv", "telefone", "ativo")
     search_fields = ("nome", "crmv")
     list_filter = ("ativo",)
+
+
+@admin.register(Vermifugacao)
+class VermifugacaoAdmin(admin.ModelAdmin):
+    list_display = ("cao", "vermifugo", "data_aplicacao")
+    search_fields = ("cao__nome", "vermifugo")
+
+
+@admin.register(Ectoparasita)
+class EctoparasitaAdmin(admin.ModelAdmin):
+    list_display = ("cao", "procedimento", "data_aplicacao")
+    search_fields = ("cao__nome", "procedimento")
+
+
+@admin.register(OcorrenciaSaude)
+class OcorrenciaSaudeAdmin(admin.ModelAdmin):
+    list_display = ("cao", "anormalidade", "data", "medicamento")
+    search_fields = ("cao__nome", "anormalidade")
+
+
+@admin.register(VisitaTecnica)
+class VisitaTecnicaAdmin(admin.ModelAdmin):
+    list_display = ("cao", "data", "medico_veterinario")
+    search_fields = ("cao__nome", "medico_veterinario")
 
 
 @admin.register(TipoVacina)

@@ -5,7 +5,8 @@
 
 <div class="barra-acoes">
   <a href="{% url 'cao_editar' cao.pk %}" class="btn btn-secundario">Editar dados</a>
-  <a href="{% url 'cao_ficha_pdf' cao.pk %}" class="btn" target="_blank">Gerar ficha (porta do box)</a>
+  <a href="{% url 'cao_ficha_sanitaria_pdf' cao.pk %}" class="btn" target="_blank">Ficha Sanitária (PDF)</a>
+  <a href="{% url 'cao_ficha_pdf' cao.pk %}" class="btn btn-secundario" target="_blank">Ficha porta do box</a>
   <a href="{% url 'cao_excluir' cao.pk %}" class="btn btn-perigo">Excluir</a>
 </div>
 
@@ -14,10 +15,12 @@
     <tr><td><b>Raça</b></td><td>{{ cao.raca }}</td><td><b>Sexo</b></td><td>{{ cao.get_sexo_display }}</td></tr>
     <tr><td><b>Nascimento</b></td><td>{{ cao.data_nascimento|date:"d/m/Y"|default:"-" }}</td><td><b>Idade aprox.</b></td><td>{{ cao.idade_aproximada|default:"-" }} anos</td></tr>
     <tr><td><b>Ingresso</b></td><td>{{ cao.data_ingresso|date:"d/m/Y" }}</td><td><b>Situação</b></td><td><span class="tag tag-{{ cao.status|lower }}">{{ cao.get_status_display }}</span></td></tr>
-    <tr><td><b>Box</b></td><td>{{ cao.box|default:"-" }}</td><td><b>Condutor</b></td><td>{{ cao.condutor_atual.nome|default:"-" }}</td></tr>
-    <tr><td><b>Microchip</b></td><td>{{ cao.microchip|default:"-" }}</td><td><b>Peso atual</b></td><td>{{ cao.peso_atual|default:"-" }} kg</td></tr>
+    <tr><td><b>Box</b></td><td>{{ cao.box|default:"-" }}</td><td><b>Condutor / Adestrador</b></td><td>{{ cao.condutor_atual.nome|default:"-" }}</td></tr>
+    <tr><td><b>Microchip (CHIP)</b></td><td>{{ cao.microchip|default:"-" }}</td><td><b>Peso atual</b></td><td>{{ cao.peso_atual|default:"-" }} kg</td></tr>
+    <tr><td><b>Especialidade</b></td><td>{{ cao.especialidade|default:"-" }}</td><td><b>Nº CRO/CPR</b></td><td>{{ cao.numero_cro_cpr|default:"-" }}</td></tr>
+    <tr><td><b>Registro SBCPA</b></td><td>{{ cao.registro_sbcpa|default:"-" }}</td><td><b>Origem</b></td><td>{{ cao.origem|default:"-" }}</td></tr>
   </table>
-  {% if cao.observacoes %}<p style="margin-top:0.8rem;"><b>Observações:</b> {{ cao.observacoes }}</p>{% endif %}
+  {% if cao.observacoes %}<p style="margin-top:0.8rem;"><b>Outras observações:</b> {{ cao.observacoes }}</p>{% endif %}
 </div>
 
 <h2>Pesagens <a href="{% url 'pesagem_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
@@ -34,6 +37,38 @@
   {% for v in vacinas %}<tr><td>{{ v.tipo.nome }}</td><td>{{ v.data_aplicacao|date:"d/m/Y" }}</td><td>{{ v.data_proxima_dose|date:"d/m/Y"|default:"-" }}</td><td>{{ v.veterinario.nome|default:"-" }}</td>
     <td><a href="{% url 'vacina_editar' cao.pk v.pk %}">Editar</a> &middot; <a href="{% url 'vacina_excluir' cao.pk v.pk %}">Excluir</a></td></tr>
   {% empty %}<tr><td colspan="5">Nenhuma vacina registrada.</td></tr>{% endfor %}
+</table>
+
+<h2>Vermifugações <a href="{% url 'vermifugacao_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<table>
+  <tr><th>Vermífugo</th><th>Aplicação</th><th>Veterinário</th><th>Lote</th><th></th></tr>
+  {% for v in vermifugacoes %}<tr><td>{{ v.vermifugo }}</td><td>{{ v.data_aplicacao|date:"d/m/Y" }}</td><td>{{ v.veterinario.nome|default:"-" }}</td><td>{{ v.lote|default:"-" }}</td>
+    <td><a href="{% url 'vermifugacao_editar' cao.pk v.pk %}">Editar</a> &middot; <a href="{% url 'vermifugacao_excluir' cao.pk v.pk %}">Excluir</a></td></tr>
+  {% empty %}<tr><td colspan="5">Nenhuma vermifugação registrada.</td></tr>{% endfor %}
+</table>
+
+<h2>Controle de ectoparasitas <a href="{% url 'ectoparasita_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<table>
+  <tr><th>Procedimento</th><th>Aplicação em</th><th>Veterinário</th><th></th></tr>
+  {% for e in ectoparasitas %}<tr><td>{{ e.procedimento }}</td><td>{{ e.data_aplicacao|date:"d/m/Y" }}</td><td>{{ e.veterinario.nome|default:"-" }}</td>
+    <td><a href="{% url 'ectoparasita_editar' cao.pk e.pk %}">Editar</a> &middot; <a href="{% url 'ectoparasita_excluir' cao.pk e.pk %}">Excluir</a></td></tr>
+  {% empty %}<tr><td colspan="4">Nenhum controle de ectoparasita registrado.</td></tr>{% endfor %}
+</table>
+
+<h2>Saúde — anormalidades <a href="{% url 'ocorrencia_saude_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<table>
+  <tr><th>Anormalidade</th><th>Data</th><th>Méd. veterinário</th><th>Medicamento</th><th></th></tr>
+  {% for o in ocorrencias_saude %}<tr><td>{{ o.anormalidade }}</td><td>{{ o.data|date:"d/m/Y" }}</td><td>{{ o.veterinario.nome|default:"-" }}</td><td>{{ o.medicamento|default:"-" }}</td>
+    <td><a href="{% url 'ocorrencia_saude_editar' cao.pk o.pk %}">Editar</a> &middot; <a href="{% url 'ocorrencia_saude_excluir' cao.pk o.pk %}">Excluir</a></td></tr>
+  {% empty %}<tr><td colspan="5">Nenhuma ocorrência de saúde registrada.</td></tr>{% endfor %}
+</table>
+
+<h2>Visitas técnicas veterinárias <a href="{% url 'visita_tecnica_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<table>
+  <tr><th>Data</th><th>Post/Grad/Médico veterinário</th><th>Observações</th><th></th></tr>
+  {% for v in visitas_tecnicas %}<tr><td>{{ v.data|date:"d/m/Y" }}</td><td>{{ v.medico_veterinario }}</td><td>{{ v.observacoes|default:"-"|truncatechars:60 }}</td>
+    <td><a href="{% url 'visita_tecnica_editar' cao.pk v.pk %}">Editar</a> &middot; <a href="{% url 'visita_tecnica_excluir' cao.pk v.pk %}">Excluir</a></td></tr>
+  {% empty %}<tr><td colspan="4">Nenhuma visita técnica registrada.</td></tr>{% endfor %}
 </table>
 
 <h2>Medicamentos <a href="{% url 'medicamento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>

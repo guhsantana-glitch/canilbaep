@@ -11,6 +11,7 @@ urlpatterns = [
     path("caes/<int:pk>/editar/", views.cao_form_view, name="cao_editar"),
     path("caes/<int:pk>/excluir/", views.cao_excluir, name="cao_excluir"),
     path("caes/<int:pk>/ficha-box.pdf", views.cao_ficha_pdf, name="cao_ficha_pdf"),
+    path("caes/<int:pk>/ficha-sanitaria.pdf", views.cao_ficha_sanitaria_pdf, name="cao_ficha_sanitaria_pdf"),
 
     path("caes/<int:cao_pk>/vacinas/nova/", views.vacina_form_view, name="vacina_nova"),
     path("caes/<int:cao_pk>/vacinas/<int:pk>/editar/", views.vacina_form_view, name="vacina_editar"),
@@ -30,6 +31,22 @@ urlpatterns = [
 
     path("caes/<int:cao_pk>/documentos/novo/", views.documento_form_view, name="documento_novo"),
     path("caes/<int:cao_pk>/documentos/<int:pk>/excluir/", views.documento_excluir, name="documento_excluir"),
+
+    path("caes/<int:cao_pk>/vermifugacoes/nova/", views.vermifugacao_form_view, name="vermifugacao_nova"),
+    path("caes/<int:cao_pk>/vermifugacoes/<int:pk>/editar/", views.vermifugacao_form_view, name="vermifugacao_editar"),
+    path("caes/<int:cao_pk>/vermifugacoes/<int:pk>/excluir/", views.vermifugacao_excluir, name="vermifugacao_excluir"),
+
+    path("caes/<int:cao_pk>/ectoparasitas/novo/", views.ectoparasita_form_view, name="ectoparasita_novo"),
+    path("caes/<int:cao_pk>/ectoparasitas/<int:pk>/editar/", views.ectoparasita_form_view, name="ectoparasita_editar"),
+    path("caes/<int:cao_pk>/ectoparasitas/<int:pk>/excluir/", views.ectoparasita_excluir, name="ectoparasita_excluir"),
+
+    path("caes/<int:cao_pk>/saude/nova/", views.ocorrencia_saude_form_view, name="ocorrencia_saude_nova"),
+    path("caes/<int:cao_pk>/saude/<int:pk>/editar/", views.ocorrencia_saude_form_view, name="ocorrencia_saude_editar"),
+    path("caes/<int:cao_pk>/saude/<int:pk>/excluir/", views.ocorrencia_saude_excluir, name="ocorrencia_saude_excluir"),
+
+    path("caes/<int:cao_pk>/visitas/nova/", views.visita_tecnica_form_view, name="visita_tecnica_nova"),
+    path("caes/<int:cao_pk>/visitas/<int:pk>/editar/", views.visita_tecnica_form_view, name="visita_tecnica_editar"),
+    path("caes/<int:cao_pk>/visitas/<int:pk>/excluir/", views.visita_tecnica_excluir, name="visita_tecnica_excluir"),
 
     path("condutores/", views.lista_condutores, name="lista_condutores"),
     path("condutores/novo/", views.condutor_form_view, name="condutor_novo"),

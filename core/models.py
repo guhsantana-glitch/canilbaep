@@ -75,12 +75,18 @@ class Cao(models.Model):
     status = models.CharField("Situação", max_length=20, choices=Status.choices, default=Status.ATIVO)
     condutor_atual = models.ForeignKey(
         Condutor, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name="caes", verbose_name="Condutor atual"
+        related_name="caes", verbose_name="Condutor atual / Adestrador"
     )
     box = models.CharField("Box / Baia", max_length=30, blank=True)
     foto = models.ImageField("Foto", upload_to="caes/fotos/", blank=True, null=True)
     origem = models.CharField("Origem (doação, compra, nascido no canil...)", max_length=150, blank=True)
-    observacoes = models.TextField("Observações gerais", blank=True)
+    # Campos da Ficha Sanitária oficial do 10º BAEP
+    especialidade = models.CharField(
+        "Especialidade (ex: Dupla Função, Faro, Guarda...)", max_length=100, blank=True
+    )
+    numero_cro_cpr = models.CharField("Nº CRO/CPR (ex: CBKC: BRC/18/00765)", max_length=100, blank=True)
+    registro_sbcpa = models.CharField("Registro SBCPA (ex: CBPA-SP/21697)", max_length=100, blank=True)
+    observacoes = models.TextField("Observações gerais / Outras observações", blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 
@@ -217,3 +223,85 @@ class Documento(models.Model):
 
     def __str__(self):
         return f"{self.titulo} - {self.cao.nome}"
+
+
+class Vermifugacao(models.Model):
+    """Quadro de vermifugação da Ficha Sanitária."""
+
+    cao = models.ForeignKey(Cao, on_delete=models.CASCADE, related_name="vermifugacoes")
+    vermifugo = models.CharField("Vermífugo (produto)", max_length=100)
+    data_aplicacao = models.DateField("Data de aplicação")
+    veterinario = models.ForeignKey(
+        Veterinario, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="vermifugacoes", verbose_name="Veterinário responsável"
+    )
+    lote = models.CharField("Lote", max_length=60, blank=True)
+    observacoes = models.TextField("Observações", blank=True)
+
+    class Meta:
+        verbose_name = "Vermifugação"
+        verbose_name_plural = "Vermifugações"
+        ordering = ["-data_aplicacao"]
+
+    def __str__(self):
+        return f"{self.vermifugo} - {self.cao.nome} ({self.data_aplicacao})"
+
+
+class Ectoparasita(models.Model):
+    """Controle de ectoparasitas da Ficha Sanitária (procedimento + data)."""
+
+    cao = models.ForeignKey(Cao, on_delete=models.CASCADE, related_name="ectoparasitas")
+    procedimento = models.CharField("Procedimento (produto aplicado)", max_length=150)
+    data_aplicacao = models.DateField("Aplicação em")
+    veterinario = models.ForeignKey(
+        Veterinario, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="ectoparasitas", verbose_name="Veterinário responsável"
+    )
+    observacoes = models.TextField("Observações", blank=True)
+
+    class Meta:
+        verbose_name = "Controle de ectoparasita"
+        verbose_name_plural = "Controle de ectoparasitas"
+        ordering = ["-data_aplicacao"]
+
+    def __str__(self):
+        return f"{self.procedimento} - {self.cao.nome} ({self.data_aplicacao})"
+
+
+class OcorrenciaSaude(models.Model):
+    """Alteração da saúde do animal: anormalidade, data, vet e medicamento."""
+
+    cao = models.ForeignKey(Cao, on_delete=models.CASCADE, related_name="ocorrencias_saude")
+    anormalidade = models.CharField("Anormalidade", max_length=200)
+    data = models.DateField("Data")
+    veterinario = models.ForeignKey(
+        Veterinario, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="ocorrencias_saude", verbose_name="Méd. veterinário"
+    )
+    medicamento = models.CharField("Medicamento", max_length=200, blank=True)
+    observacoes = models.TextField("Observações", blank=True)
+
+    class Meta:
+        verbose_name = "Ocorrência de saúde"
+        verbose_name_plural = "Ocorrências de saúde"
+        ordering = ["-data"]
+
+    def __str__(self):
+        return f"{self.anormalidade} - {self.cao.nome} ({self.data})"
+
+
+class VisitaTecnica(models.Model):
+    """Visita técnica do médico veterinário (5º BPChoque / CPChq)."""
+
+    cao = models.ForeignKey(Cao, on_delete=models.CASCADE, related_name="visitas_tecnicas")
+    data = models.DateField("Data da visita")
+    medico_veterinario = models.CharField("Post/Grad + nome do méd. veterinário", max_length=150)
+    observacoes = models.TextField("Observações da visita", blank=True)
+
+    class Meta:
+        verbose_name = "Visita técnica veterinária"
+        verbose_name_plural = "Visitas técnicas veterinárias"
+        ordering = ["-data"]
+
+    def __str__(self):
+        return f"Visita {self.data} - {self.cao.nome}"

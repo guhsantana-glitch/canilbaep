@@ -9,14 +9,16 @@ from django.db.models import Q
 
 from .models import (
     Cao, Condutor, Vacina, Medicamento, Pesagem, Treinamento, Documento,
-    Veterinario, TipoVacina,
+    Veterinario, TipoVacina, Vermifugacao, Ectoparasita, OcorrenciaSaude,
+    VisitaTecnica,
 )
 from .forms import (
     CaoForm, CondutorForm, VacinaForm, MedicamentoForm,
     PesagemForm, TreinamentoForm, DocumentoForm, RelatorioMensalForm, RelatorioGeralForm,
-    VeterinarioForm, TipoVacinaForm,
+    VeterinarioForm, TipoVacinaForm, VermifugacaoForm, EctoparasitaForm,
+    OcorrenciaSaudeForm, VisitaTecnicaForm,
 )
-from .pdf_utils import gerar_ficha_box, gerar_relatorio_mensal, gerar_relatorio_geral_mensal
+from .pdf_utils import gerar_ficha_box, gerar_relatorio_mensal, gerar_relatorio_geral_mensal, gerar_ficha_sanitaria
 
 
 class CanilLoginView(LoginView):
@@ -60,6 +62,10 @@ def ficha_cao(request, pk):
         "cao": cao,
         "pesagens": cao.pesagens.all()[:30],
         "vacinas": cao.vacinas.select_related("tipo", "veterinario").all(),
+        "vermifugacoes": cao.vermifugacoes.select_related("veterinario").all(),
+        "ectoparasitas": cao.ectoparasitas.select_related("veterinario").all(),
+        "ocorrencias_saude": cao.ocorrencias_saude.select_related("veterinario").all(),
+        "visitas_tecnicas": cao.visitas_tecnicas.all(),
         "medicamentos": cao.medicamentos.select_related("veterinario").all(),
         "treinamentos": treinamentos,
         "documentos": cao.documentos.all(),
@@ -98,6 +104,17 @@ def cao_ficha_pdf(request, pk):
     buffer = gerar_ficha_box(cao)
     resp = HttpResponse(buffer, content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="ficha_box_{cao.nome}.pdf"'
+    return resp
+
+
+@login_required
+def cao_ficha_sanitaria_pdf(request, pk):
+    """Ficha Sanitária oficial do 10º BAEP (imunização, vermifugação, peso,
+    ectoparasitas, ocorrências de saúde e visitas técnicas)."""
+    cao = get_object_or_404(Cao, pk=pk)
+    buffer = gerar_ficha_sanitaria(cao)
+    resp = HttpResponse(buffer, content_type="application/pdf")
+    resp["Content-Disposition"] = f'inline; filename="ficha_sanitaria_{cao.nome}.pdf"'
     return resp
 
 
@@ -177,6 +194,48 @@ def documento_form_view(request, cao_pk, pk=None):
 @login_required
 def documento_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, Documento)
+
+
+# ---------- Ficha Sanitária (vermifugação, ectoparasitas, saúde, visitas) ----------
+
+@login_required
+def vermifugacao_form_view(request, cao_pk, pk=None):
+    return _registro_form_view(request, pk, cao_pk, Vermifugacao, VermifugacaoForm, "core/registro_form.html")
+
+
+@login_required
+def vermifugacao_excluir(request, cao_pk, pk):
+    return _registro_excluir_view(request, cao_pk, pk, Vermifugacao)
+
+
+@login_required
+def ectoparasita_form_view(request, cao_pk, pk=None):
+    return _registro_form_view(request, pk, cao_pk, Ectoparasita, EctoparasitaForm, "core/registro_form.html")
+
+
+@login_required
+def ectoparasita_excluir(request, cao_pk, pk):
+    return _registro_excluir_view(request, cao_pk, pk, Ectoparasita)
+
+
+@login_required
+def ocorrencia_saude_form_view(request, cao_pk, pk=None):
+    return _registro_form_view(request, pk, cao_pk, OcorrenciaSaude, OcorrenciaSaudeForm, "core/registro_form.html")
+
+
+@login_required
+def ocorrencia_saude_excluir(request, cao_pk, pk):
+    return _registro_excluir_view(request, cao_pk, pk, OcorrenciaSaude)
+
+
+@login_required
+def visita_tecnica_form_view(request, cao_pk, pk=None):
+    return _registro_form_view(request, pk, cao_pk, VisitaTecnica, VisitaTecnicaForm, "core/registro_form.html")
+
+
+@login_required
+def visita_tecnica_excluir(request, cao_pk, pk):
+    return _registro_excluir_view(request, cao_pk, pk, VisitaTecnica)
 
 
 # ---------- Condutores ----------
