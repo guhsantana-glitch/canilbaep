@@ -217,7 +217,10 @@ footer{text-align:center;padding:1.2rem;color:#8a8a7c;font-size:0.78rem;}
   <div class="usuario-area">
     {% if request.canil_atual %}<span class="tag tag-treinamento">{{ request.canil_atual.nome }}</span>{% endif %}
     <span>{{ user.get_username }}</span>
-    <a href="{% url 'logout' %}">Sair</a>
+    <form method="post" action="{% url 'logout' %}" style="display:inline;margin:0;">
+      {% csrf_token %}
+      <button type="submit" style="background:none;border:none;padding:0;color:var(--azul-escuro);cursor:pointer;font-size:0.85rem;text-decoration:underline;">Sair</button>
+    </form>
   </div>
   {% endif %}
 </header>
