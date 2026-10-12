@@ -27,9 +27,9 @@
 <div class="grid-caes">
   {% for cao in caes %}
   <a href="{% url 'ficha_cao' cao.pk %}" class="ficha-cao">
-    <div class="foto" {% if cao.foto %}style="background-image:url('{{ cao.foto.url }}');"{% endif %}>
-      {% if not cao.foto %}{{ cao.nome|slice:":1" }}{% endif %}
-    </div>
+    {% if cao.foto %}
+    <div class="foto" style="background-image:url('{{ cao.foto.url }}');"></div>
+    {% endif %}
     <div class="info">
       <h3>{{ cao.nome }}</h3>
       <p>{{ cao.raca }} &middot; {{ cao.get_sexo_display }}</p>

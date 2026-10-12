@@ -15,6 +15,12 @@ class DataISOField(forms.DateField):
     widget = forms.DateInput(attrs={"type": "date"}, format=ISO_DATE)
 
 
+class FotoWidget(forms.ClearableFileInput):
+    """Upload de foto sem exibir o caminho do arquivo: mostra miniatura
+    + opção de remover, ou só o campo de envio."""
+    template_name = "core/widgets/foto_limpa.html"
+
+
 class CaoForm(forms.ModelForm):
     data_nascimento = DataISOField(label="Data de nascimento", required=False)
     data_ingresso = DataISOField(label="Data de ingresso no plantel")
@@ -33,7 +39,8 @@ class CaoForm(forms.ModelForm):
             "status", "condutor_atual", "box", "foto", "origem",
             "especialidade", "numero_cro_cpr", "registro_sbcpa", "patrimonio", "observacoes",
         ]
-        widgets = {"observacoes": forms.Textarea(attrs={"rows": 3})}
+        widgets = {"observacoes": forms.Textarea(attrs={"rows": 3}),
+                   "foto": FotoWidget()}
 
 
 class CondutorForm(forms.ModelForm):

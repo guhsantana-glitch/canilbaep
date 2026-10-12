@@ -1,0 +1,10 @@
+{% if widget.is_initial %}
+<div style="margin-bottom:0.5rem;">
+  <img src="{{ widget.value.url }}" alt="Foto atual" style="max-width:140px;max-height:140px;border-radius:10px;border:1px solid var(--borda);">
+  <label style="display:block;font-weight:400;margin-top:0.3rem;font-size:0.82rem;">
+    <input type="checkbox" name="{{ widget.checkbox_name }}" id="{{ widget.checkbox_id }}" style="width:auto;display:inline-block;">
+    Remover foto atual
+  </label>
+</div>
+{% endif %}
+<input type="{{ widget.type }}" name="{{ widget.name }}"{% include "django/forms/widgets/attrs.html" %}>
