@@ -18,10 +18,16 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
 
+RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
+
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 CSRF_TRUSTED_ORIGINS = [
     o for o in os.environ.get("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if o
 ]
+if RENDER_EXTERNAL_HOSTNAME and f"https://{RENDER_EXTERNAL_HOSTNAME}" not in CSRF_TRUSTED_ORIGINS:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_EXTERNAL_HOSTNAME}")
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -68,12 +74,15 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'canil_baep.wsgi.application'
 
-# Banco de dados: usa SQLite localmente. Em produção, defina DATABASE_URL
-# (Railway/Render fornecem essa variável automaticamente ao criar um Postgres).
+# Banco de dados: SQLite local. Em produção, DATABASE_URL do Neon
+# (Postgres gratuito que não expira). Neon usa pooler (pgbouncer):
+# sem conexões persistentes, senão o servidor fecha a conexão
+# ociosa -> "SSL connection has been closed unexpectedly".
 DATABASES = {
     'default': dj_database_url.config(
         default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}",
-        conn_max_age=600,
+        conn_max_age=0,
+        conn_health_checks=True,
     )
 }
 

@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: canilbaep
+    runtime: python
+    plan: free
+    buildCommand: "bash build.sh"
+    startCommand: "gunicorn canil_baep.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120"
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.12.7"
+      # Configure manualmente no painel: DATABASE_URL do Neon (grátis, sem expirar)
+      - key: DATABASE_URL
+        sync: false

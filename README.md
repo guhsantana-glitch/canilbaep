@@ -79,19 +79,34 @@ O sistema atende vários canis setoriais com dados totalmente isolados:
    no seu canil, sem ver dados dos outros.
 4. Desativar um canil bloqueia o acesso de seus usuários na hora.
 
-## 3. Deploy (Railway ou Render)
+## 3. Deploy (Render + Neon — gratuito e sem expirar)
 
-1. Suba este projeto para um repositório no GitHub (o `.gitignore` já exclui
-   `.env`, `db.sqlite3` e mídia local).
-2. Crie um novo projeto na plataforma escolhida e conecte o repositório.
-3. Adicione um banco PostgreSQL — a variável `DATABASE_URL` é detectada automaticamente.
-4. Defina as variáveis de ambiente: `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`,
-   `DJANGO_ALLOWED_HOSTS`, `DJANGO_CSRF_TRUSTED_ORIGINS`.
-5. O `Procfile` já roda as migrações e sobe o servidor com Gunicorn.
-6. Após o primeiro deploy, crie o superusuário pelo terminal da plataforma:
+Banco: use o **Neon** (Postgres gratuito que não expira, igual ao AdestraPro).
+Não use o Postgres do Render (o plano free expira e apaga os dados).
+
+1. Crie conta em https://neon.tech → **New Project** (região `US East`/mais próxima)
+   → copie a **Connection string** com pooler (`...-pooler...`, `sslmode=require`).
+2. No https://dashboard.render.com, abra o Web Service `canilbaep`
+   (ou crie um **New → Web Service** apontando este repositório):
+   - **Build Command:** `bash build.sh`
+   - **Start Command:** `gunicorn canil_baep.wsgi:application --bind 0.0.0.0:$PORT --workers 2 --timeout 120`
+3. Em **Environment**, defina:
+   - `DATABASE_URL` = connection string do Neon (cole a URL com pooler)
+   - `DJANGO_DEBUG=False`
+   - `DJANGO_SECRET_KEY` = Generate (ou uma chave longa)
+   - `DJANGO_ALLOWED_HOSTS=canilbaep.onrender.com`
+   - `DJANGO_CSRF_TRUSTED_ORIGINS=https://canilbaep.onrender.com`
+4. **Deploy** (o `build.sh` já roda `collectstatic` + `migrate`).
+5. No **Shell** do serviço, crie o gestor geral:
    ```bash
    python manage.py createsuperuser
    ```
+6. Acesse `https://canilbaep.onrender.com/login/` → Gestão → cadastre
+   unidades, canis e usuários.
+
+> Notas do plano free: o site "dorme" após ~15 min sem uso (a primeira
+> abertura demora ~1 min); fotos/documentos somem a cada novo deploy
+> (disco efêmero) — quando quiser, evoluímos para armazenamento externo.
 
 ## Próximos incrementos sugeridos
 
