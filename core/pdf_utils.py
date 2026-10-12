@@ -38,66 +38,152 @@ def _cabecalho_com_logo(story):
 
 
 def gerar_ficha_box(cao):
-    """Gera um PDF A5 para fixar na porta do box do cão."""
+    """Ficha A5 para a porta do box — cabe em 1 página, nome nunca corta.
+
+    Layout profissional: faixa institucional, nome com fonte adaptativa
+    (quebra de linha + reduz conforme o tamanho), box em destaque, foto
+    com proporção preservada e tabela compacta de dados.
+    """
+    from datetime import date
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+
     buffer = BytesIO()
     doc = SimpleDocTemplate(
         buffer, pagesize=A5,
-        topMargin=1.2 * cm, bottomMargin=1.2 * cm,
-        leftMargin=1.2 * cm, rightMargin=1.2 * cm,
+        topMargin=0.9 * cm, bottomMargin=0.9 * cm,
+        leftMargin=0.9 * cm, rightMargin=0.9 * cm,
+        title=f"Box - {cao.nome}",
     )
     styles = getSampleStyleSheet()
-    titulo_style = ParagraphStyle(
-        "Titulo", parent=styles["Title"], alignment=TA_CENTER, fontSize=20
-    )
-    subtitulo_style = ParagraphStyle(
-        "Subtitulo", parent=styles["Normal"], alignment=TA_CENTER, fontSize=10,
-        textColor=colors.HexColor("#2f8fc4")
-    )
-    label_style = ParagraphStyle("Label", parent=styles["Normal"], fontSize=12, leading=18)
+    AZUL = colors.HexColor("#1a3a5f")
+    CIANO = colors.HexColor("#2f8fc4")
+
+    faixa = ParagraphStyle("BoxFaixa", parent=styles["Normal"], alignment=TA_CENTER,
+                           fontSize=8, leading=10, textColor=CIANO, spaceAfter=2)
+    # Nome com tamanho adaptativo para nunca cortar
+    nome_txt = (cao.nome or "-").upper()
+    if len(nome_txt) > 32:
+        nome_size, nome_lead = 13, 15
+    elif len(nome_txt) > 22:
+        nome_size, nome_lead = 15, 17
+    else:
+        nome_size, nome_lead = 18, 20
+    nome_style = ParagraphStyle("BoxNome", parent=styles["Title"], alignment=TA_CENTER,
+                                fontSize=nome_size, leading=nome_lead, textColor=AZUL,
+                                spaceBefore=2, spaceAfter=2)
+    rotulo = ParagraphStyle("BoxRot", parent=styles["Normal"], fontSize=8.5, leading=11,
+                            textColor=colors.HexColor("#555555"))
+    valor = ParagraphStyle("BoxVal", parent=styles["Normal"], fontSize=9.5, leading=11.5)
+    box_style = ParagraphStyle("BoxNum", parent=styles["Title"], alignment=TA_CENTER,
+                               fontSize=16, leading=18, textColor=colors.white)
+    rodape = ParagraphStyle("BoxRod", parent=styles["Normal"], alignment=TA_CENTER,
+                            fontSize=6.5, leading=8, textColor=colors.HexColor("#888888"))
 
     story = []
-    _cabecalho_com_logo(story)
-    story.append(Paragraph("10° BAEP - CANIL", subtitulo_style))
-    story.append(Spacer(1, 6))
-    story.append(Paragraph(cao.nome.upper(), titulo_style))
-    story.append(Spacer(1, 10))
 
+    # Faixa institucional + logo compacto
+    story.append(Paragraph("POLÍCIA MILITAR SP &nbsp;•&nbsp; 10º BAEP &nbsp;•&nbsp; CANIL — UNIDADE K-9 SUMARÉ", faixa))
+    _cabecalho_com_logo_compacto(story, altura_cm=1.6)
+
+    story.append(Paragraph(nome_txt, nome_style))
+
+    # Box em destaque (etiqueta cheia)
+    if cao.box:
+        etiqueta = Table([[Paragraph(f"BOX &nbsp;{cao.box}", box_style)]], colWidths=[13 * cm])
+        etiqueta.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), AZUL),
+            ("ROUNDEDCORNERS", [4, 4, 4, 4]),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ]))
+        story.append(etiqueta)
+        story.append(Spacer(1, 5))
+    else:
+        story.append(Spacer(1, 2))
+
+    # Foto proporcional (nunca estoura a página)
     if cao.foto:
         try:
-            story.append(Image(cao.foto.path, width=6 * cm, height=6 * cm))
-            story.append(Spacer(1, 10))
+            from PIL import Image as PILImage
+            with PILImage.open(cao.foto.path) as img:
+                w0, h0 = img.size
+            max_w, max_h = 5.2 * cm, 3.4 * cm
+            escala = min(max_w / w0, max_h / h0)
+            foto = Image(cao.foto.path, width=w0 * escala, height=h0 * escala)
+            foto.hAlign = "CENTER"
+            story.append(foto)
+            story.append(Spacer(1, 5))
         except Exception:
             pass
 
-    dados = [
-        ["Raça:", cao.raca],
-        ["Sexo:", cao.get_sexo_display()],
-        ["Nascimento:", cao.data_nascimento.strftime("%d/%m/%Y") if cao.data_nascimento else "-"],
-        ["Ingresso no plantel:", cao.data_ingresso.strftime("%d/%m/%Y")],
-        ["Situação:", cao.get_status_display()],
-        ["Box:", cao.box or "-"],
-        ["Condutor atual:", cao.condutor_atual.nome if cao.condutor_atual else "-"],
-        ["Microchip:", cao.microchip or "-"],
-        ["Patrimônio:", cao.patrimonio or "-"],
+    def L(t):
+        return Paragraph(f"<b>{t}</b>", rotulo)
+
+    def V(t):
+        return Paragraph(t or "-", valor)
+
+    nasc = cao.data_nascimento.strftime("%d/%m/%Y") if cao.data_nascimento else "-"
+    if cao.data_nascimento and cao.idade_aproximada() is not None:
+        nasc = f"{nasc} ({cao.idade_aproximada()}a)"
+    linhas = [
+        [L("Raça"), V(cao.raca), L("Sexo"), V(cao.get_sexo_display())],
+        [L("Nascimento"), V(nasc), L("Ingresso"), V(cao.data_ingresso.strftime("%d/%m/%Y") if cao.data_ingresso else "-")],
+        [L("Situação"), V(cao.get_status_display()), L("Peso"), V(f"{cao.peso_atual()} kg" if cao.peso_atual() else "-")],
+        [L("Condutor"), V(cao.condutor_atual.nome if cao.condutor_atual else "-"), L("Especialidade"), V(cao.especialidade)],
+        [L("Microchip"), V(cao.microchip), L("Patrimônio"), V(cao.patrimonio)],
+        [L("CRO/CPR"), V(cao.numero_cro_cpr), L("SBCPA"), V(cao.registro_sbcpa)],
     ]
-    tabela = Table(dados, colWidths=[5 * cm, 6 * cm])
+    larg = 13 * cm
+    tabela = Table(linhas, colWidths=[2.6 * cm, 3.9 * cm, 2.6 * cm, 3.9 * cm])
     tabela.setStyle(TableStyle([
-        ("FONTSIZE", (0, 0), (-1, -1), 12),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
-        ("TOPPADDING", (0, 0), (-1, -1), 6),
-        ("FONTNAME", (0, 0), (0, -1), "Helvetica-Bold"),
-        ("LINEBELOW", (0, 0), (-1, -1), 0.5, colors.HexColor("#cccccc")),
+        ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#d5dde5")),
+        ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#eef3f7")),
+        ("BACKGROUND", (2, 0), (2, -1), colors.HexColor("#eef3f7")),
+        ("TOPPADDING", (0, 0), (-1, -1), 2.5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 2.5),
+        ("LEFTPADDING", (0, 0), (-1, -1), 4),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 4),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ROWBACKGROUNDS", (0, 0), (-1, -1), [colors.white, colors.HexColor("#f7fafc")]),
     ]))
     story.append(tabela)
 
     if cao.observacoes:
-        story.append(Spacer(1, 12))
-        story.append(Paragraph("<b>Observações:</b>", label_style))
-        story.append(Paragraph(cao.observacoes, styles["Normal"]))
+        obs = (cao.observacoes or "").strip().replace("\n", " ")
+        if len(obs) > 220:
+            obs = obs[:217] + "..."
+        story.append(Spacer(1, 5))
+        story.append(Paragraph(f"<b>Obs.:</b> {obs}", ParagraphStyle(
+            "BoxObs", parent=styles["Normal"], fontSize=8, leading=10, alignment=TA_LEFT)))
+
+    story.append(Spacer(1, 6))
+    story.append(Paragraph(
+        f"Emitido em {date.today().strftime('%d/%m/%Y')} &nbsp;•&nbsp; Ficha sanitária completa no sistema do Canil",
+        rodape))
 
     doc.build(story)
     buffer.seek(0)
     return buffer
+
+
+def _cabecalho_com_logo_compacto(story, altura_cm=1.6):
+    """Logo compacto para a ficha de box (não empurra o conteúdo p/ 2ª página)."""
+    from PIL import Image as PILImage
+
+    if not LOGO_CANIL.exists():
+        return
+    try:
+        with PILImage.open(LOGO_CANIL) as img:
+            w0, h0 = img.size
+        altura_alvo = altura_cm * cm
+        imagem = Image(str(LOGO_CANIL), width=altura_alvo * (w0 / h0), height=altura_alvo)
+        imagem.hAlign = "CENTER"
+        story.append(imagem)
+        story.append(Spacer(1, 3))
+    except Exception:
+        pass
 
 
 def gerar_relatorio_mensal(cao, data_inicio, data_fim, pesagens, vacinas, medicamentos):
