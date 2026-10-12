@@ -27,6 +27,12 @@ from .pdf_utils import gerar_ficha_box, gerar_relatorio_mensal, gerar_relatorio_
 class CanilLoginView(LoginView):
     template_name = "core/login.html"
 
+    def get_success_url(self):
+        # Gestor geral abre o sistema de gestão; operador abre o canil.
+        if self.request.user.is_superuser:
+            return reverse("gestao_painel")
+        return reverse("lista_caes")
+
 
 class CanilLogoutView(LogoutView):
     next_page = "login"
