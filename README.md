@@ -108,25 +108,32 @@ Não use o Postgres do Render (o plano free expira e apaga os dados).
 > abertura demora ~1 min); fotos/documentos somem a cada novo deploy
 > (disco efêmero) — quando quiser, evoluímos para armazenamento externo.
 
-## 4. Fotos e documentos permanentes (Cloudflare R2 — gratuito)
+## 4. Fotos e documentos permanentes (storage gratuito, sem cartão)
 
 Sem isso, fotos/documentos enviados no site somem a cada deploy do Render.
-Com o R2 (10 GB gratuitos), viram uma "pasta na nuvem" permanente:
+Com um bucket S3 (Cloudflare R2 ou Supabase), viram uma "pasta na nuvem"
+permanente. O R2 pede cartão (só cobra se passar de 10 GB); o
+**Supabase não pede cartão** — recomendado:
 
-1. Crie conta em https://dash.cloudflare.com → **R2 Object Storage** → **Create bucket**
-   (`canilbaep-media`) → na aba **Settings** do bucket, libere o **Public Development URL**
-   (`pub-xxxx.r2.dev`).
-2. Em **R2 → Manage R2 API Tokens → Create API Token** (permissão
-   **Object Read & Write** no bucket) → anote Access Key, Secret Key e o
-   Endpoint (`https://xxxx.r2.cloudflarestorage.com`).
-3. No Render → serviço `canilbaep` → **Environment**, adicione:
-   - `R2_BUCKET=canilbaep-media`
-   - `R2_ENDPOINT_URL=https://xxxx.r2.cloudflarestorage.com`
-   - `R2_ACCESS_KEY=...`
-   - `R2_SECRET_KEY=...`
-   - `R2_PUBLIC_URL=pub-xxxx.r2.dev`
-4. Redeploy. Novos uploads passam a ir para o R2 e sobrevivem aos deploys.
+1. Crie conta em https://supabase.com → **New Project** (`canilbaep`,
+   região **South America (São Paulo)**, crie uma senha do banco).
+2. No projeto → **Storage** → **New bucket** (`canilbaep-media**, **Public** ligado).
+3. Gere as chaves S3: **Project Settings → API → S3 Access Keys**
+   (ou **Storage → S3 access keys**, conforme a versão do painel) →
+   anote endpoint (`https://xxx.supabase.co/storage/v1/s3`), access key e
+   secret key. A URL pública base é
+   `https://xxx.supabase.co/storage/v1/object/public`.
+4. No Render → serviço `canilbaep` → **Environment**, adicione:
+   - `STORAGE_BUCKET=canilbaep-media`
+   - `STORAGE_ENDPOINT_URL=https://xxx.supabase.co/storage/v1/s3`
+   - `STORAGE_ACCESS_KEY=...`
+   - `STORAGE_SECRET_KEY=...`
+   - `STORAGE_PUBLIC_URL=xxx.supabase.co/storage/v1/object/public`
+5. Redeploy. Novos uploads passam a ir para o bucket e sobrevivem aos deploys.
    (Arquivos antigos precisam ser re-anexados uma vez.)
+
+Alternativa com cartão: Cloudflare R2 (10 GB free) — mesmo esquema,
+preenchendo as mesmas variáveis `STORAGE_*` com os dados do R2.
 
 ## Próximos incrementos sugeridos
 

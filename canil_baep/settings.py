@@ -106,25 +106,26 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-# === Arquivos na nuvem (Cloudflare R2, gratuito) ===
+# === Arquivos na nuvem (storage S3: Cloudflare R2 ou Supabase, gratuitos) ===
 # Sem essas variáveis, usa a pasta local (desenvolvimento).
-# Com elas, fotos/documentos vão para o bucket R2 e sobrevivem aos
+# Com elas, fotos/documentos vão para o bucket e sobrevivem aos
 # deploys do Render (cujo disco é efêmero e apaga tudo a cada deploy).
 # Veja o README (seção Deploy) para criar o bucket e as chaves.
-R2_BUCKET = os.environ.get("R2_BUCKET", "")
-if R2_BUCKET:
+STORAGE_BUCKET = os.environ.get("STORAGE_BUCKET", "") or os.environ.get("R2_BUCKET", "")
+if STORAGE_BUCKET:
     STORAGES = {
         "default": {
             "BACKEND": "storages.backends.s3.S3Storage",
             "OPTIONS": {
-                "access_key": os.environ.get("R2_ACCESS_KEY", ""),
-                "secret_key": os.environ.get("R2_SECRET_KEY", ""),
-                "bucket_name": R2_BUCKET,
-                "endpoint_url": os.environ.get("R2_ENDPOINT_URL", ""),
-                "region_name": "auto",
+                "access_key": os.environ.get("STORAGE_ACCESS_KEY", "") or os.environ.get("R2_ACCESS_KEY", ""),
+                "secret_key": os.environ.get("STORAGE_SECRET_KEY", "") or os.environ.get("R2_SECRET_KEY", ""),
+                "bucket_name": STORAGE_BUCKET,
+                "endpoint_url": os.environ.get("STORAGE_ENDPOINT_URL", "") or os.environ.get("R2_ENDPOINT_URL", ""),
+                "region_name": os.environ.get("STORAGE_REGION", "auto"),
+                "addressing_style": os.environ.get("STORAGE_ADDRESSING_STYLE") or None,
                 "default_acl": None,
                 "querystring_auth": False,
-                "custom_domain": os.environ.get("R2_PUBLIC_URL", ""),
+                "custom_domain": os.environ.get("STORAGE_PUBLIC_URL", "") or os.environ.get("R2_PUBLIC_URL", ""),
                 "location": "media",
             },
         },
@@ -132,7 +133,8 @@ if R2_BUCKET:
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
-    MEDIA_URL = f'https://{os.environ.get("R2_PUBLIC_URL", "")}/media/'
+    _public = os.environ.get("STORAGE_PUBLIC_URL", "") or os.environ.get("R2_PUBLIC_URL", "")
+    MEDIA_URL = f'https://{_public}/media/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
