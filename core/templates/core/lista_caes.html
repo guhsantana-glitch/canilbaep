@@ -29,6 +29,8 @@
   <a href="{% url 'ficha_cao' cao.pk %}" class="ficha-cao">
     {% if cao.foto %}
     <div class="foto" style="background-image:url('{{ cao.foto.url }}');"></div>
+    {% else %}
+    <div class="foto sem-foto">{{ cao.nome|slice:":1"|upper }}</div>
     {% endif %}
     <div class="info">
       <h3>{{ cao.nome }}</h3>

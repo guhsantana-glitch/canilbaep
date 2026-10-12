@@ -213,7 +213,7 @@ tbody tr:hover td{background:var(--azul-claro);}
 .ficha-cao{
   background:#fff;border:1px solid var(--borda);border-radius:14px;
   overflow:hidden;transition:transform .15s,box-shadow .15s;
-  text-decoration:none;color:var(--texto);display:block;
+  text-decoration:none;color:var(--texto);display:flex;flex-direction:column;
   box-shadow:var(--sombra);
 }
 .ficha-cao:hover{box-shadow:var(--sombra-forte);transform:translateY(-3px);}
@@ -224,7 +224,7 @@ tbody tr:hover td{background:var(--azul-claro);}
   background-size:cover;background-position:center;
   text-shadow:0 2px 8px rgba(13,58,92,.4);
 }
-.ficha-cao .info{padding:.9rem 1rem 1.05rem;}
+.ficha-cao .info{padding:.9rem 1rem 1.05rem;flex:1;}
 .ficha-cao .info h3{margin:0 0 .25rem;font-size:1.08rem;color:var(--azul-profundo);font-weight:400;}
 .ficha-cao .info p{margin:.12rem 0;font-size:.82rem;color:var(--texto-suave);}
 .form-linha{margin-bottom:1rem;}
