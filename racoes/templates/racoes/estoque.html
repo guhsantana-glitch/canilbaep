@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'lista_caes' %}" class="btn btn-secundario">← Voltar</a>
+</div>
+<span class="eyebrow">Estoque</span>
+<h1>Rações do canil</h1>
+
+<div class="barra-acoes">
+  <a href="{% url 'racao_entrada_nova' %}" class="btn">+ Entrada</a>
+  <a href="{% url 'racao_saida_nova' %}" class="btn btn-secundario">− Saída</a>
+  <a href="{% url 'racao_nova' %}" class="btn btn-secundario">Cadastrar ração</a>
+</div>
+
+<h2>Estoque atual</h2>
+<table>
+  <tr><th>Ração</th><th>Marca</th><th>Estoque (kg)</th><th>Mínimo (kg)</th><th>Situação</th><th></th></tr>
+  {% for l in linhas %}
+  <tr>
+    <td>{{ l.racao.nome }}</td>
+    <td>{{ l.racao.marca|default:"-" }}</td>
+    <td>{{ l.estoque }}</td>
+    <td>{{ l.racao.estoque_minimo_kg }}</td>
+    <td>{% if l.alerta %}<span class="tag tag-baixado">Abaixo do mínimo</span>{% else %}<span class="tag tag-ativo">OK</span>{% endif %}</td>
+    <td>
+      <a href="{% url 'racao_extrato' l.racao.pk %}">Extrato</a> &middot;
+      <a href="{% url 'racao_editar' l.racao.pk %}">Editar</a> &middot;
+      <a href="{% url 'racao_excluir' l.racao.pk %}">Excluir</a>
+    </td>
+  </tr>
+  {% empty %}<tr><td colspan="6">Nenhuma ração cadastrada.</td></tr>{% endfor %}
+</table>
+
+<h2>Últimas movimentações</h2>
+<table>
+  <tr><th>Data</th><th>Ração</th><th>Tipo</th><th>Qtd (kg)</th><th>Responsável</th><th>Motivo</th></tr>
+  {% for m in ultimas %}
+  <tr>
+    <td>{{ m.data|date:"d/m/Y" }}</td>
+    <td>{{ m.racao.nome }}</td>
+    <td>{{ m.get_tipo_display }}</td>
+    <td>{{ m.quantidade_kg }}</td>
+    <td>{{ m.responsavel.first_name|default:m.responsavel.username }}</td>
+    <td>{{ m.motivo|default:"-" }}</td>
+  </tr>
+  {% empty %}<tr><td colspan="6">Sem movimentações ainda.</td></tr>{% endfor %}
+</table>
+{% endblock %}

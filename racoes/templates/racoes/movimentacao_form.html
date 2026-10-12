@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'racoes_estoque' %}" class="btn btn-secundario">← Voltar</a>
+</div>
+<span class="eyebrow">Estoque</span>
+<h1>{{ titulo }}</h1>
+<div class="card" style="margin-bottom:1rem;">
+  <p style="margin:0;font-size:0.88rem;color:#666;">O responsável registrado será <b>{{ request.user.first_name|default:request.user.username }}</b> (usuário logado).</p>
+</div>
+<form method="post" class="card">
+  {% csrf_token %}
+  {% for field in form %}
+  <div class="form-linha">
+    <label>{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}<p style="color:#8a3324;font-size:0.8rem;">{{ field.errors|striptags }}</p>{% endif %}
+  </div>
+  {% endfor %}
+  <button class="btn" type="submit">Salvar</button>
+  <a href="{% url 'racoes_estoque' %}" class="btn btn-secundario">Cancelar</a>
+</form>
+{% endblock %}

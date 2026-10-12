@@ -254,6 +254,7 @@ footer{text-align:center;padding:1.4rem;color:#93a5b1;font-size:.78rem;border-to
     <a href="{% url 'lista_condutores' %}">Condutores</a>
     <a href="{% url 'lista_veterinarios' %}">Veterinários</a>
     <a href="{% url 'lista_tipos_vacina' %}">Vacinas</a>
+    <a href="{% url 'racoes_estoque' %}">Rações</a>
     <a href="{% url 'relatorios_menu' %}">Relatórios</a>
     {% if user.is_superuser %}<a href="{% url 'gestao_painel' %}">Gestão</a>{% endif %}
     {% if user.is_superuser %}<a href="{% url 'lista_usuarios' %}">Usuários</a>{% endif %}
