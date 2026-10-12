@@ -78,6 +78,7 @@ def gerar_ficha_box(cao):
         ["Box:", cao.box or "-"],
         ["Condutor atual:", cao.condutor_atual.nome if cao.condutor_atual else "-"],
         ["Microchip:", cao.microchip or "-"],
+        ["Patrimônio:", cao.patrimonio or "-"],
     ]
     tabela = Table(dados, colWidths=[5 * cm, 6 * cm])
     tabela.setStyle(TableStyle([
@@ -288,6 +289,7 @@ def gerar_ficha_sanitaria(cao):
         [Paragraph("<b>D/NASC</b>", cab), p(fmt_data(cao.data_nascimento)), Paragraph("<b>ESPECIALIDADE</b>", cab), p(cao.especialidade)],
         [Paragraph("<b>Nº CRO/CPR</b>", cab), p(cao.numero_cro_cpr), Paragraph("<b>ADESTRADOR</b>", cab), p(cao.condutor_atual.nome if cao.condutor_atual else "")],
         [Paragraph("<b>CHIP</b>", cab), p(cao.microchip), Paragraph("<b>REGISTRO SBCPA</b>", cab), p(cao.registro_sbcpa)],
+        [Paragraph("<b>PATRIMÔNIO</b>", cab), p(cao.patrimonio), Paragraph("<b>BOX / BAIA</b>", cab), p(cao.box)],
     ]
     t = Table(dados_cao, colWidths=[3 * cm, 6 * cm, 3.5 * cm, 5.5 * cm])
     t.setStyle(estilo_grade)

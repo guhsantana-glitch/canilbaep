@@ -53,9 +53,9 @@ class VisitaTecnicaInline(admin.TabularInline):
 
 @admin.register(Cao)
 class CaoAdmin(admin.ModelAdmin):
-    list_display = ("nome", "raca", "sexo", "status", "condutor_atual", "box", "data_ingresso")
+    list_display = ("nome", "raca", "sexo", "status", "condutor_atual", "box", "patrimonio", "data_ingresso")
     list_filter = ("status", "sexo", "raca")
-    search_fields = ("nome", "microchip", "box")
+    search_fields = ("nome", "microchip", "box", "patrimonio")
     inlines = [PesagemInline, VacinaInline, VermifugacaoInline, EctoparasitaInline, OcorrenciaSaudeInline, VisitaTecnicaInline, MedicamentoInline, TreinamentoInline, DocumentoInline]
 
 

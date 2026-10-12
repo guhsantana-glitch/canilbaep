@@ -24,7 +24,7 @@ class CaoForm(forms.ModelForm):
         fields = [
             "nome", "raca", "sexo", "microchip", "data_nascimento", "data_ingresso",
             "status", "condutor_atual", "box", "foto", "origem",
-            "especialidade", "numero_cro_cpr", "registro_sbcpa", "observacoes",
+            "especialidade", "numero_cro_cpr", "registro_sbcpa", "patrimonio", "observacoes",
         ]
         widgets = {"observacoes": forms.Textarea(attrs={"rows": 3})}
 

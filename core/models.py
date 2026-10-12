@@ -86,6 +86,7 @@ class Cao(models.Model):
     )
     numero_cro_cpr = models.CharField("Nº CRO/CPR (ex: CBKC: BRC/18/00765)", max_length=100, blank=True)
     registro_sbcpa = models.CharField("Registro SBCPA (ex: CBPA-SP/21697)", max_length=100, blank=True)
+    patrimonio = models.CharField("Patrimônio (nº patrimonial PMESP)", max_length=60, blank=True)
     observacoes = models.TextField("Observações gerais / Outras observações", blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
