@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'ficha_cao' cao.pk %}" class="btn btn-secundario">← Voltar</a>
+</div>
 <span class="eyebrow">{{ cao.nome }}</span>
 <h1>Novo registro</h1>
 <form method="post" enctype="multipart/form-data" class="card">

@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'lista_caes' %}" class="btn btn-secundario">← Voltar</a>
+</div>
 <span class="eyebrow">Administração</span>
 <h1>Usuários do sistema</h1>
 <p style="color:#666;font-size:0.88rem;">Todo usuário criado aqui tem acesso completo às funções do sistema (cães, condutores, veterinários, vacinas, relatórios). Marque "Acesso ao painel Admin" apenas para quem também deve acessar o /admin/ do Django.</p>

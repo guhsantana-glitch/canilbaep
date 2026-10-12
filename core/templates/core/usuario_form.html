@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'lista_usuarios' %}" class="btn btn-secundario">← Voltar</a>
+</div>
 <span class="eyebrow">{% if usuario %}Editar{% else %}Novo{% endif %}</span>
 <h1>{% if usuario %}Editar usuário: {{ usuario.username }}{% else %}Novo usuário{% endif %}</h1>
 <form method="post" class="card">

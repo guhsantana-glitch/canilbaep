@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'lista_caes' %}" class="btn btn-secundario">← Voltar</a>
+</div>
 <span class="eyebrow">Catálogo</span>
 <h1>Tipos de vacina</h1>
 <p style="color:#666;font-size:0.88rem;">Cadastre aqui os tipos de vacina disponíveis para seleção ao registrar uma aplicação na ficha do cão.</p>

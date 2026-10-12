@@ -4,6 +4,7 @@
 <h1>{{ cao.nome }}</h1>
 
 <div class="barra-acoes">
+  <a href="{% url 'lista_caes' %}" class="btn btn-secundario">← Voltar</a>
   <a href="{% url 'cao_editar' cao.pk %}" class="btn btn-secundario">Editar dados</a>
   <a href="{% url 'cao_ficha_sanitaria_pdf' cao.pk %}" class="btn" target="_blank">Ficha Sanitária (PDF)</a>
   <a href="{% url 'cao_ficha_pdf' cao.pk %}" class="btn btn-secundario" target="_blank">Ficha porta do box</a>

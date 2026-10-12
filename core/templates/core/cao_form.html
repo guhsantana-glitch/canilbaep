@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% if cao %}{% url 'ficha_cao' cao.pk %}{% else %}{% url 'lista_caes' %}{% endif %}" class="btn btn-secundario">← Voltar</a>
+</div>
 <span class="eyebrow">{% if cao %}Editar{% else %}Novo cadastro{% endif %}</span>
 <h1>{% if cao %}Editar {{ cao.nome }}{% else %}Novo cão{% endif %}</h1>
 <form method="post" enctype="multipart/form-data" class="card">

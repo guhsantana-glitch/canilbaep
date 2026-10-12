@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'relatorios_menu' %}" class="btn btn-secundario">← Voltar</a>
+</div>
 <span class="eyebrow">Relatórios</span>
 <h1>Relatório mensal por cão</h1>
 <form method="post" class="card">

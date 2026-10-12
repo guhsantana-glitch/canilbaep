@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'lista_tipos_vacina' %}" class="btn btn-secundario">← Voltar</a>
+</div>
 <span class="eyebrow">{% if tipo %}Editar{% else %}Novo{% endif %}</span>
 <h1>{% if tipo %}Editar {{ tipo.nome }}{% else %}Novo tipo de vacina{% endif %}</h1>
 <form method="post" class="card">

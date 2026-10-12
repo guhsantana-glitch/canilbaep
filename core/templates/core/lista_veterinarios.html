@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'lista_caes' %}" class="btn btn-secundario">← Voltar</a>
+</div>
 <span class="eyebrow">Equipe técnica</span>
 <h1>Veterinários responsáveis</h1>
 <div class="barra-acoes"><a href="{% url 'veterinario_novo' %}" class="btn">+ Novo veterinário</a></div>
