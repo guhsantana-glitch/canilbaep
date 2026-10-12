@@ -208,6 +208,7 @@ class Documento(models.Model):
         EXAME = "EXAME", "Resultado de exame"
         INGRESSO = "INGRESSO", "Documento de ingresso no plantel"
         LAUDO = "LAUDO", "Laudo veterinário"
+        AT_VACINA = "AT_VACINA", "Atestado de vacinação"
         OUTRO = "OUTRO", "Outro"
 
     cao = models.ForeignKey(Cao, on_delete=models.CASCADE, related_name="documentos")
