@@ -61,7 +61,23 @@ Acesse:
 - `core/views.py` — cadastro, edição, exclusão, ficha do cão, relatório mensal, gestão de usuários
 - `core/pdf_utils.py` — geração da ficha para porta do box e do relatório mensal em PDF (com espaço para logotipos)
 - `core/templates/` — telas do sistema
+- `canis/` — multi-canil (modelo Canil, vínculo usuário-canil, middleware de escopo)
+- `gestaocanis/` — painel do gestor geral (canis, usuários, uso)
 - `static/logos/` — coloque aqui `logo_canil.png` e `logo_baep.png`
+
+## Multi-canil (modo SaaS)
+
+O sistema atende vários canis setoriais com dados totalmente isolados:
+
+1. Entre como superusuário e abra **Gestão** no menu — o painel mostra
+   quantos canis estão cadastrados/ativos, total de cães e usuários, e o
+   uso por canil.
+2. Cadastre cada canil (**+ Novo canil**) e seus usuários
+   (**Gerenciar usuários → + Novo usuário**, definindo canil e papel).
+3. Clique em **Acessar** no canil para operar dentro dele (o nome do canil
+   aparece ao lado do usuário logado). Cada operador comum entra direto
+   no seu canil, sem ver dados dos outros.
+4. Desativar um canil bloqueia o acesso de seus usuários na hora.
 
 ## 3. Deploy (Railway ou Render)
 

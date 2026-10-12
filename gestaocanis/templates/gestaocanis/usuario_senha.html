@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'gestao_usuarios' %}" class="btn btn-secundario">← Voltar</a>
+</div>
+<span class="eyebrow">Gestão geral</span>
+<h1>Redefinir senha: {{ vinculo.usuario.username }}</h1>
+<div class="card">
+  <p>Canil: <b>{{ vinculo.canil.nome }}</b></p>
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-linha">
+      <label>Nova senha</label>
+      <input type="text" name="password" required minlength="4">
+    </div>
+    <button class="btn" type="submit">Redefinir</button>
+    <a href="{% url 'gestao_usuarios' %}" class="btn btn-secundario">Cancelar</a>
+  </form>
+</div>
+{% endblock %}

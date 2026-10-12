@@ -3,6 +3,10 @@ from django.contrib.auth.models import User
 
 
 class Veterinario(models.Model):
+    canil = models.ForeignKey(
+        "canis.Canil", on_delete=models.CASCADE, related_name="veterinarios",
+        verbose_name="Canil", null=True, blank=True,
+    )
     nome = models.CharField("Nome completo", max_length=150)
     crmv = models.CharField("CRMV (registro profissional)", max_length=30, blank=True)
     telefone = models.CharField("Telefone", max_length=20, blank=True)
@@ -20,7 +24,11 @@ class Veterinario(models.Model):
 
 
 class TipoVacina(models.Model):
-    nome = models.CharField("Nome da vacina", max_length=100, unique=True)
+    canil = models.ForeignKey(
+        "canis.Canil", on_delete=models.CASCADE, related_name="tipos_vacina",
+        verbose_name="Canil", null=True, blank=True,
+    )
+    nome = models.CharField("Nome da vacina", max_length=100)
     nome_comercial = models.CharField("Nome comercial", max_length=100, blank=True)
     fabricante = models.CharField("Fabricante", max_length=100, blank=True)
     partida = models.CharField("Partida", max_length=60, blank=True)
@@ -33,12 +41,19 @@ class TipoVacina(models.Model):
         verbose_name = "Tipo de vacina"
         verbose_name_plural = "Tipos de vacina"
         ordering = ["nome"]
+        constraints = [
+            models.UniqueConstraint(fields=["canil", "nome"], name="uniq_tipovacina_canil_nome")
+        ]
 
     def __str__(self):
         return self.nome
 
 
 class Condutor(models.Model):
+    canil = models.ForeignKey(
+        "canis.Canil", on_delete=models.CASCADE, related_name="condutores",
+        verbose_name="Canil", null=True, blank=True,
+    )
     nome = models.CharField("Nome completo", max_length=150)
     matricula = models.CharField("Matrícula", max_length=30, unique=True)
     posto_graduacao = models.CharField("Posto/Graduação", max_length=60, blank=True)
@@ -71,6 +86,10 @@ class Cao(models.Model):
         BAIXADO = "BAIXADO", "Baixado / Fora de serviço"
         OBITO = "OBITO", "Óbito"
 
+    canil = models.ForeignKey(
+        "canis.Canil", on_delete=models.CASCADE, related_name="caes",
+        verbose_name="Canil", null=True, blank=True,
+    )
     nome = models.CharField("Nome", max_length=100)
     raca = models.CharField("Raça", max_length=80)
     sexo = models.CharField("Sexo", max_length=1, choices=Sexo.choices)

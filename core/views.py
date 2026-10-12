@@ -6,6 +6,9 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.urls import reverse
 from django.db.models import Q
+from functools import wraps
+
+from canis.utils import canil_atual
 
 from .models import (
     Cao, Condutor, Vacina, Medicamento, Pesagem, Treinamento, Documento,
@@ -33,11 +36,47 @@ def eh_superusuario(user):
     return user.is_superuser
 
 
+def exigir_canil(view):
+    """Garante que o usuário esteja operando dentro de um canil.
+
+    Superusuário sem canil escolhido é enviado ao painel de gestão.
+    """
+    @wraps(view)
+    @login_required
+    def _wrapper(request, *args, **kwargs):
+        canil = canil_atual(request)
+        if canil is None:
+            if request.user.is_superuser:
+                messages.info(request, "Selecione um canil para operar.")
+                return redirect("gestao_painel")
+            return render(request, "canis/sem_acesso.html", status=403)
+        request.canil_escopo = canil
+        return view(request, *args, **kwargs)
+    return _wrapper
+
+
+def _form(FormClass, canil, *args, **kwargs):
+    """Instancia o form passando o canil quando ele suportar o filtro."""
+    try:
+        return FormClass(*args, canil=canil, **kwargs)
+    except TypeError:
+        return FormClass(*args, **kwargs)
+
+
+def _qs(model, request):
+    """Queryset do modelo já filtrado pelo canil em operação."""
+    return model.objects.filter(canil=request.canil_escopo)
+
+
+def _get(model, request, pk, **kwargs):
+    return get_object_or_404(model, pk=pk, canil=request.canil_escopo, **kwargs)
+
+
 # ---------- Cães ----------
 
-@login_required
+@exigir_canil
 def lista_caes(request):
-    caes = Cao.objects.select_related("condutor_atual").all()
+    caes = Cao.objects.select_related("condutor_atual").filter(canil=request.canil_escopo)
     status = request.GET.get("status")
     busca = request.GET.get("q")
     if status:
@@ -50,9 +89,9 @@ def lista_caes(request):
     })
 
 
-@login_required
+@exigir_canil
 def ficha_cao(request, pk):
-    cao = get_object_or_404(Cao, pk=pk)
+    cao = _get(Cao, request, pk)
     treinamentos = cao.treinamentos.all()
     evolucao = [
         {"data": t.data.strftime("%d/%m/%Y"), "nota": float(t.nota_avaliacao)}
@@ -73,23 +112,26 @@ def ficha_cao(request, pk):
     })
 
 
-@login_required
+@exigir_canil
 def cao_form_view(request, pk=None):
-    cao = get_object_or_404(Cao, pk=pk) if pk else None
+    canil = request.canil_escopo
+    cao = _get(Cao, request, pk) if pk else None
     if request.method == "POST":
-        form = CaoForm(request.POST, request.FILES, instance=cao)
+        form = _form(CaoForm, canil, request.POST, request.FILES, instance=cao)
         if form.is_valid():
-            cao = form.save()
+            cao = form.save(commit=False)
+            cao.canil = canil
+            cao.save()
             messages.success(request, f"Cão '{cao.nome}' salvo com sucesso.")
             return redirect("ficha_cao", pk=cao.pk)
     else:
-        form = CaoForm(instance=cao)
+        form = _form(CaoForm, canil, instance=cao)
     return render(request, "core/cao_form.html", {"form": form, "cao": cao})
 
 
-@login_required
+@exigir_canil
 def cao_excluir(request, pk):
-    cao = get_object_or_404(Cao, pk=pk)
+    cao = _get(Cao, request, pk)
     if request.method == "POST":
         nome = cao.nome
         cao.delete()
@@ -98,20 +140,20 @@ def cao_excluir(request, pk):
     return render(request, "core/confirmar_exclusao.html", {"objeto": cao, "tipo": "cão"})
 
 
-@login_required
+@exigir_canil
 def cao_ficha_pdf(request, pk):
-    cao = get_object_or_404(Cao, pk=pk)
+    cao = _get(Cao, request, pk)
     buffer = gerar_ficha_box(cao)
     resp = HttpResponse(buffer, content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="ficha_box_{cao.nome}.pdf"'
     return resp
 
 
-@login_required
+@exigir_canil
 def cao_ficha_sanitaria_pdf(request, pk):
     """Ficha Sanitária oficial do 10º BAEP (imunização, vermifugação, peso,
     ectoparasitas, ocorrências de saúde e visitas técnicas)."""
-    cao = get_object_or_404(Cao, pk=pk)
+    cao = _get(Cao, request, pk)
     buffer = gerar_ficha_sanitaria(cao)
     resp = HttpResponse(buffer, content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="ficha_sanitaria_{cao.nome}.pdf"'
@@ -121,10 +163,10 @@ def cao_ficha_sanitaria_pdf(request, pk):
 # ---------- Registros vinculados ao cão (vacina, medicamento, pesagem, treinamento, documento) ----------
 
 def _registro_form_view(request, pk, cao_pk, Model, FormClass, template, campo_cao="cao"):
-    cao = get_object_or_404(Cao, pk=cao_pk)
-    instancia = get_object_or_404(Model, pk=pk) if pk else None
+    cao = _get(Cao, request, cao_pk)
+    instancia = get_object_or_404(Model, pk=pk, cao=cao) if pk else None
     if request.method == "POST":
-        form = FormClass(request.POST, request.FILES, instance=instancia)
+        form = _form(FormClass, request.canil_escopo, request.POST, request.FILES, instance=instancia)
         if form.is_valid():
             obj = form.save(commit=False)
             setattr(obj, campo_cao, cao)
@@ -132,12 +174,12 @@ def _registro_form_view(request, pk, cao_pk, Model, FormClass, template, campo_c
             messages.success(request, "Registro salvo com sucesso.")
             return redirect("ficha_cao", pk=cao.pk)
     else:
-        form = FormClass(instance=instancia)
+        form = _form(FormClass, request.canil_escopo, instance=instancia)
     return render(request, template, {"form": form, "cao": cao})
 
 
 def _registro_excluir_view(request, cao_pk, pk, Model):
-    cao = get_object_or_404(Cao, pk=cao_pk)
+    cao = _get(Cao, request, cao_pk)
     obj = get_object_or_404(Model, pk=pk, cao=cao)
     if request.method == "POST":
         obj.delete()
@@ -146,113 +188,115 @@ def _registro_excluir_view(request, cao_pk, pk, Model):
     return render(request, "core/confirmar_exclusao.html", {"objeto": obj, "tipo": "registro"})
 
 
-@login_required
+@exigir_canil
 def vacina_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, Vacina, VacinaForm, "core/registro_form.html")
 
 
-@login_required
+@exigir_canil
 def vacina_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, Vacina)
 
 
-@login_required
+@exigir_canil
 def medicamento_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, Medicamento, MedicamentoForm, "core/registro_form.html")
 
 
-@login_required
+@exigir_canil
 def medicamento_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, Medicamento)
 
 
-@login_required
+@exigir_canil
 def pesagem_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, Pesagem, PesagemForm, "core/registro_form.html")
 
 
-@login_required
+@exigir_canil
 def pesagem_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, Pesagem)
 
 
-@login_required
+@exigir_canil
 def treinamento_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, Treinamento, TreinamentoForm, "core/registro_form.html")
 
 
-@login_required
+@exigir_canil
 def treinamento_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, Treinamento)
 
 
-@login_required
+@exigir_canil
 def documento_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, Documento, DocumentoForm, "core/registro_form.html")
 
 
-@login_required
+@exigir_canil
 def documento_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, Documento)
 
 
 # ---------- Ficha Sanitária (vermifugação, ectoparasitas, saúde, visitas) ----------
 
-@login_required
+@exigir_canil
 def vermifugacao_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, Vermifugacao, VermifugacaoForm, "core/registro_form.html")
 
 
-@login_required
+@exigir_canil
 def vermifugacao_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, Vermifugacao)
 
 
-@login_required
+@exigir_canil
 def ectoparasita_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, Ectoparasita, EctoparasitaForm, "core/registro_form.html")
 
 
-@login_required
+@exigir_canil
 def ectoparasita_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, Ectoparasita)
 
 
-@login_required
+@exigir_canil
 def ocorrencia_saude_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, OcorrenciaSaude, OcorrenciaSaudeForm, "core/registro_form.html")
 
 
-@login_required
+@exigir_canil
 def ocorrencia_saude_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, OcorrenciaSaude)
 
 
-@login_required
+@exigir_canil
 def visita_tecnica_form_view(request, cao_pk, pk=None):
     return _registro_form_view(request, pk, cao_pk, VisitaTecnica, VisitaTecnicaForm, "core/registro_form.html")
 
 
-@login_required
+@exigir_canil
 def visita_tecnica_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, VisitaTecnica)
 
 
 # ---------- Condutores ----------
 
-@login_required
+@exigir_canil
 def lista_condutores(request):
-    condutores = Condutor.objects.all()
+    condutores = _qs(Condutor, request)
     return render(request, "core/lista_condutores.html", {"condutores": condutores})
 
 
-@login_required
+@exigir_canil
 def condutor_form_view(request, pk=None):
-    condutor = get_object_or_404(Condutor, pk=pk) if pk else None
+    condutor = _get(Condutor, request, pk) if pk else None
     if request.method == "POST":
         form = CondutorForm(request.POST, instance=condutor)
         if form.is_valid():
-            form.save()
+            condutor = form.save(commit=False)
+            condutor.canil = request.canil_escopo
+            condutor.save()
             messages.success(request, "Condutor salvo com sucesso.")
             return redirect("lista_condutores")
     else:
@@ -260,9 +304,9 @@ def condutor_form_view(request, pk=None):
     return render(request, "core/condutor_form.html", {"form": form, "condutor": condutor})
 
 
-@login_required
+@exigir_canil
 def condutor_excluir(request, pk):
-    condutor = get_object_or_404(Condutor, pk=pk)
+    condutor = _get(Condutor, request, pk)
     if request.method == "POST":
         condutor.delete()
         messages.success(request, "Condutor excluído.")
@@ -272,19 +316,21 @@ def condutor_excluir(request, pk):
 
 # ---------- Veterinários ----------
 
-@login_required
+@exigir_canil
 def lista_veterinarios(request):
-    veterinarios = Veterinario.objects.all()
+    veterinarios = _qs(Veterinario, request)
     return render(request, "core/lista_veterinarios.html", {"veterinarios": veterinarios})
 
 
-@login_required
+@exigir_canil
 def veterinario_form_view(request, pk=None):
-    veterinario = get_object_or_404(Veterinario, pk=pk) if pk else None
+    veterinario = _get(Veterinario, request, pk) if pk else None
     if request.method == "POST":
         form = VeterinarioForm(request.POST, instance=veterinario)
         if form.is_valid():
-            form.save()
+            veterinario = form.save(commit=False)
+            veterinario.canil = request.canil_escopo
+            veterinario.save()
             messages.success(request, "Veterinário salvo com sucesso.")
             return redirect("lista_veterinarios")
     else:
@@ -292,9 +338,9 @@ def veterinario_form_view(request, pk=None):
     return render(request, "core/veterinario_form.html", {"form": form, "veterinario": veterinario})
 
 
-@login_required
+@exigir_canil
 def veterinario_excluir(request, pk):
-    veterinario = get_object_or_404(Veterinario, pk=pk)
+    veterinario = _get(Veterinario, request, pk)
     if request.method == "POST":
         veterinario.delete()
         messages.success(request, "Veterinário excluído.")
@@ -304,19 +350,21 @@ def veterinario_excluir(request, pk):
 
 # ---------- Tipos de vacina (catálogo) ----------
 
-@login_required
+@exigir_canil
 def lista_tipos_vacina(request):
-    tipos = TipoVacina.objects.all()
+    tipos = _qs(TipoVacina, request)
     return render(request, "core/lista_tipos_vacina.html", {"tipos": tipos})
 
 
-@login_required
+@exigir_canil
 def tipo_vacina_form_view(request, pk=None):
-    tipo = get_object_or_404(TipoVacina, pk=pk) if pk else None
+    tipo = _get(TipoVacina, request, pk) if pk else None
     if request.method == "POST":
         form = TipoVacinaForm(request.POST, instance=tipo)
         if form.is_valid():
-            form.save()
+            tipo = form.save(commit=False)
+            tipo.canil = request.canil_escopo
+            tipo.save()
             messages.success(request, "Tipo de vacina salvo com sucesso.")
             return redirect("lista_tipos_vacina")
     else:
@@ -324,9 +372,9 @@ def tipo_vacina_form_view(request, pk=None):
     return render(request, "core/tipo_vacina_form.html", {"form": form, "tipo": tipo})
 
 
-@login_required
+@exigir_canil
 def tipo_vacina_excluir(request, pk):
-    tipo = get_object_or_404(TipoVacina, pk=pk)
+    tipo = _get(TipoVacina, request, pk)
     if request.method == "POST":
         tipo.delete()
         messages.success(request, "Tipo de vacina excluído.")
@@ -336,18 +384,22 @@ def tipo_vacina_excluir(request, pk):
 
 # ---------- Relatórios ----------
 
-@login_required
+@exigir_canil
 def relatorios_menu(request):
     return render(request, "core/relatorios_menu.html")
 
 
-@login_required
+@exigir_canil
 def relatorio_mensal(request):
+    canil = request.canil_escopo
     resultado = None
     if request.method == "POST":
-        form = RelatorioMensalForm(request.POST)
+        form = _form(RelatorioMensalForm, canil, request.POST)
         if form.is_valid():
             cao = form.cleaned_data["cao"]
+            if cao.canil_id != canil.pk:
+                messages.error(request, "Cão de outro canil.")
+                return redirect("relatorio_mensal")
             di = form.cleaned_data["data_inicio"]
             df = form.cleaned_data["data_fim"]
             resultado = {
@@ -357,16 +409,20 @@ def relatorio_mensal(request):
                 "medicamentos": cao.medicamentos.filter(data_inicio__range=(di, df)),
             }
     else:
-        form = RelatorioMensalForm()
+        form = _form(RelatorioMensalForm, canil)
     return render(request, "core/relatorio_mensal.html", {"form": form, "resultado": resultado})
 
 
-@login_required
+@exigir_canil
 def relatorio_mensal_pdf(request):
-    form = RelatorioMensalForm(request.GET)
+    canil = request.canil_escopo
+    form = _form(RelatorioMensalForm, canil, request.GET)
     if not form.is_valid():
         return redirect("relatorio_mensal")
     cao = form.cleaned_data["cao"]
+    if cao.canil_id != canil.pk:
+        messages.error(request, "Cão de outro canil.")
+        return redirect("relatorio_mensal")
     di = form.cleaned_data["data_inicio"]
     df = form.cleaned_data["data_fim"]
     buffer = gerar_relatorio_mensal(
@@ -380,8 +436,8 @@ def relatorio_mensal_pdf(request):
     return resp
 
 
-def _montar_linhas_relatorio_geral(di, df, apenas_ativos):
-    caes = Cao.objects.select_related("condutor_atual").all()
+def _montar_linhas_relatorio_geral(canil, di, df, apenas_ativos):
+    caes = Cao.objects.select_related("condutor_atual").filter(canil=canil)
     if apenas_ativos:
         caes = caes.filter(status=Cao.Status.ATIVO)
     linhas = []
@@ -399,8 +455,9 @@ def _montar_linhas_relatorio_geral(di, df, apenas_ativos):
     return linhas
 
 
-@login_required
+@exigir_canil
 def relatorio_geral(request):
+    canil = request.canil_escopo
     resultado = None
     if request.method == "POST":
         form = RelatorioGeralForm(request.POST)
@@ -410,22 +467,23 @@ def relatorio_geral(request):
             apenas_ativos = form.cleaned_data["apenas_ativos"]
             resultado = {
                 "data_inicio": di, "data_fim": df, "apenas_ativos": apenas_ativos,
-                "linhas": _montar_linhas_relatorio_geral(di, df, apenas_ativos),
+                "linhas": _montar_linhas_relatorio_geral(canil, di, df, apenas_ativos),
             }
     else:
         form = RelatorioGeralForm(initial={"apenas_ativos": True})
     return render(request, "core/relatorio_geral.html", {"form": form, "resultado": resultado})
 
 
-@login_required
+@exigir_canil
 def relatorio_geral_pdf(request):
+    canil = request.canil_escopo
     form = RelatorioGeralForm(request.GET)
     if not form.is_valid():
         return redirect("relatorio_geral")
     di = form.cleaned_data["data_inicio"]
     df = form.cleaned_data["data_fim"]
     apenas_ativos = form.cleaned_data["apenas_ativos"]
-    linhas = _montar_linhas_relatorio_geral(di, df, apenas_ativos)
+    linhas = _montar_linhas_relatorio_geral(canil, di, df, apenas_ativos)
     buffer = gerar_relatorio_geral_mensal(di, df, linhas, apenas_ativos)
     resp = HttpResponse(buffer, content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="relatorio_geral_{di}_{df}.pdf"'

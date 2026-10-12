@@ -19,6 +19,13 @@ class CaoForm(forms.ModelForm):
     data_nascimento = DataISOField(label="Data de nascimento", required=False)
     data_ingresso = DataISOField(label="Data de ingresso no plantel")
 
+    def __init__(self, *args, canil=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if canil is not None:
+            self.fields["condutor_atual"].queryset = (
+                Condutor.objects.filter(canil=canil).order_by("nome")
+            )
+
     class Meta:
         model = Cao
         fields = [
@@ -57,6 +64,12 @@ class VacinaForm(forms.ModelForm):
     data_aplicacao = DataISOField(label="Data da vacinação")
     data_proxima_dose = DataISOField(label="Revacinar em", required=False)
 
+    def __init__(self, *args, canil=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if canil is not None:
+            self.fields["tipo"].queryset = TipoVacina.objects.filter(canil=canil).order_by("nome")
+            self.fields["veterinario"].queryset = Veterinario.objects.filter(canil=canil).order_by("nome")
+
     class Meta:
         model = Vacina
         fields = ["tipo", "data_aplicacao", "data_proxima_dose", "veterinario", "lote", "observacoes"]
@@ -65,6 +78,11 @@ class VacinaForm(forms.ModelForm):
 class MedicamentoForm(forms.ModelForm):
     data_inicio = DataISOField(label="Início do tratamento")
     data_fim = DataISOField(label="Fim do tratamento", required=False)
+
+    def __init__(self, *args, canil=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if canil is not None:
+            self.fields["veterinario"].queryset = Veterinario.objects.filter(canil=canil).order_by("nome")
 
     class Meta:
         model = Medicamento
@@ -98,6 +116,11 @@ class DocumentoForm(forms.ModelForm):
 class VermifugacaoForm(forms.ModelForm):
     data_aplicacao = DataISOField(label="Data de aplicação")
 
+    def __init__(self, *args, canil=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if canil is not None:
+            self.fields["veterinario"].queryset = Veterinario.objects.filter(canil=canil).order_by("nome")
+
     class Meta:
         model = Vermifugacao
         fields = ["vermifugo", "data_aplicacao", "veterinario", "lote", "observacoes"]
@@ -106,6 +129,11 @@ class VermifugacaoForm(forms.ModelForm):
 class EctoparasitaForm(forms.ModelForm):
     data_aplicacao = DataISOField(label="Aplicação em")
 
+    def __init__(self, *args, canil=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if canil is not None:
+            self.fields["veterinario"].queryset = Veterinario.objects.filter(canil=canil).order_by("nome")
+
     class Meta:
         model = Ectoparasita
         fields = ["procedimento", "data_aplicacao", "veterinario", "observacoes"]
@@ -113,6 +141,11 @@ class EctoparasitaForm(forms.ModelForm):
 
 class OcorrenciaSaudeForm(forms.ModelForm):
     data = DataISOField(label="Data")
+
+    def __init__(self, *args, canil=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if canil is not None:
+            self.fields["veterinario"].queryset = Veterinario.objects.filter(canil=canil).order_by("nome")
 
     class Meta:
         model = OcorrenciaSaude
@@ -131,6 +164,11 @@ class RelatorioMensalForm(forms.Form):
     cao = forms.ModelChoiceField(queryset=Cao.objects.all(), label="Cão")
     data_inicio = DataISOField(label="De")
     data_fim = DataISOField(label="Até")
+
+    def __init__(self, *args, canil=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if canil is not None:
+            self.fields["cao"].queryset = Cao.objects.filter(canil=canil).order_by("nome")
 
 
 class RelatorioGeralForm(forms.Form):

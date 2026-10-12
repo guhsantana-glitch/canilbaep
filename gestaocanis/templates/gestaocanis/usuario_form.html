@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'gestao_usuarios' %}" class="btn btn-secundario">← Voltar</a>
+</div>
+<span class="eyebrow">{% if usuario_obj %}Editar{% else %}Novo{% endif %}</span>
+<h1>{% if usuario_obj %}Editar usuário: {{ usuario_obj.username }}{% else %}Novo usuário{% endif %}</h1>
+<form method="post" class="card">
+  {% csrf_token %}
+  <div class="form-linha">
+    <label>Nome de usuário (login)</label>
+    <input type="text" name="username" value="{{ dados.username }}" required>
+  </div>
+  <div class="form-linha">
+    <label>Nome completo</label>
+    <input type="text" name="first_name" value="{{ dados.first_name }}">
+  </div>
+  <div class="form-linha">
+    <label>Canil</label>
+    <select name="canil" required>
+      <option value="">Selecione...</option>
+      {% for c in canis %}
+      <option value="{{ c.pk }}" {% if dados.canil_id == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-linha">
+    <label>Papel</label>
+    <select name="papel">
+      {% for valor, rotulo in papeis %}
+      <option value="{{ valor }}" {% if dados.papel == valor %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-linha">
+    <label>{% if usuario_obj %}Nova senha (deixe em branco para manter a atual){% else %}Senha{% endif %}</label>
+    <input type="password" name="password">
+  </div>
+  <div class="form-linha">
+    <label><input type="checkbox" name="ativo" style="width:auto;display:inline-block;" {% if dados.ativo %}checked{% endif %}> Usuário ativo</label>
+  </div>
+  {% if erro %}<p style="color:#8a3324;font-size:0.85rem;">{{ erro }}</p>{% endif %}
+  <button class="btn" type="submit">Salvar</button>
+  <a href="{% url 'gestao_usuarios' %}" class="btn btn-secundario">Cancelar</a>
+</form>
+{% endblock %}

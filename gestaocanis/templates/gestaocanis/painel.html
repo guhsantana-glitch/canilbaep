@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Gestão geral</span>
+<h1>Painel — canis utilizando o sistema</h1>
+
+<div class="grid-caes" style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
+  <div class="card" style="margin-bottom:0;text-align:center;"><p style="font-size:2rem;margin:0;color:var(--azul-escuro);"><b>{{ total_canis }}</b></p><p>Canis cadastrados</p></div>
+  <div class="card" style="margin-bottom:0;text-align:center;"><p style="font-size:2rem;margin:0;color:var(--azul-escuro);"><b>{{ total_ativos }}</b></p><p>Canis ativos</p></div>
+  <div class="card" style="margin-bottom:0;text-align:center;"><p style="font-size:2rem;margin:0;color:var(--azul-escuro);"><b>{{ total_caes }}</b></p><p>Cães no total</p></div>
+  <div class="card" style="margin-bottom:0;text-align:center;"><p style="font-size:2rem;margin:0;color:var(--azul-escuro);"><b>{{ total_usuarios }}</b></p><p>Usuários</p></div>
+</div>
+
+<div class="barra-acoes">
+  <a href="{% url 'gestao_canil_novo' %}" class="btn">+ Novo canil</a>
+  <a href="{% url 'gestao_usuarios' %}" class="btn btn-secundario">Gerenciar usuários</a>
+  {% if canil_em_uso %}<a href="{% url 'gestao_sair_canil' %}" class="btn btn-secundario">Sair do canil atual</a>{% endif %}
+</div>
+
+<h2>Canis</h2>
+<table>
+  <tr><th>Canil</th><th>Unidade</th><th>Cidade</th><th>Cães</th><th>Usuários</th><th>Situação</th><th></th></tr>
+  {% for l in linhas %}
+  <tr>
+    <td><b>{{ l.canil.nome }}</b>{% if l.canil.pk == canil_em_uso %} <span class="tag tag-treinamento">em uso</span>{% endif %}</td>
+    <td>{{ l.canil.unidade|default:"-" }}</td>
+    <td>{{ l.canil.cidade|default:"-" }}</td>
+    <td>{{ l.caes }}</td>
+    <td>{{ l.usuarios }}</td>
+    <td>{% if l.canil.ativo %}<span class="tag tag-ativo">Ativo</span>{% else %}<span class="tag tag-baixado">Inativo</span>{% endif %}</td>
+    <td>
+      <a href="{% url 'gestao_canil_acessar' l.canil.pk %}">Acessar</a> &middot;
+      <a href="{% url 'gestao_canil_editar' l.canil.pk %}">Editar</a> &middot;
+      <a href="{% url 'gestao_canil_excluir' l.canil.pk %}">Excluir</a>
+    </td>
+  </tr>
+  {% empty %}<tr><td colspan="7">Nenhum canil cadastrado. Comece criando o primeiro.</td></tr>{% endfor %}
+</table>
+{% endblock %}

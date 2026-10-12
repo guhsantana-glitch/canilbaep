@@ -210,10 +210,12 @@ footer{text-align:center;padding:1.2rem;color:#8a8a7c;font-size:0.78rem;}
     <a href="{% url 'lista_veterinarios' %}">Veterinários</a>
     <a href="{% url 'lista_tipos_vacina' %}">Vacinas</a>
     <a href="{% url 'relatorios_menu' %}">Relatórios</a>
+    {% if user.is_superuser %}<a href="{% url 'gestao_painel' %}">Gestão</a>{% endif %}
     {% if user.is_superuser %}<a href="{% url 'lista_usuarios' %}">Usuários</a>{% endif %}
     {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
   </nav>
   <div class="usuario-area">
+    {% if request.canil_atual %}<span class="tag tag-treinamento">{{ request.canil_atual.nome }}</span>{% endif %}
     <span>{{ user.get_username }}</span>
     <a href="{% url 'logout' %}">Sair</a>
   </div>

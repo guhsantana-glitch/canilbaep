@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'gestao_painel' %}" class="btn btn-secundario">← Voltar</a>
+</div>
+<span class="eyebrow">Gestão geral</span>
+<h1>Usuários dos canis</h1>
+<div class="barra-acoes"><a href="{% url 'gestao_usuario_novo' %}" class="btn">+ Novo usuário</a></div>
+<table>
+  <tr><th>Usuário</th><th>Nome</th><th>Canil</th><th>Papel</th><th>Ativo</th><th></th></tr>
+  {% for v in vinculos %}
+  <tr>
+    <td>{{ v.usuario.username }}</td>
+    <td>{{ v.usuario.first_name|default:"-" }}</td>
+    <td>{{ v.canil.nome }}</td>
+    <td>{{ v.get_papel_display }}</td>
+    <td>{% if v.ativo %}Sim{% else %}Não{% endif %}</td>
+    <td>
+      <a href="{% url 'gestao_usuario_editar' v.pk %}">Editar</a> &middot;
+      <a href="{% url 'gestao_usuario_senha' v.pk %}">Senha</a> &middot;
+      <a href="{% url 'gestao_usuario_excluir' v.pk %}">Excluir</a>
+    </td>
+  </tr>
+  {% empty %}<tr><td colspan="6">Nenhum usuário vinculado ainda.</td></tr>{% endfor %}
+</table>
+{% endblock %}
