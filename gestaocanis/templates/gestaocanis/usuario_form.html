@@ -33,8 +33,9 @@
     </select>
   </div>
   <div class="form-linha">
-    <label>{% if usuario_obj %}Nova senha (deixe em branco para manter a atual){% else %}Senha{% endif %}</label>
-    <input type="password" name="password">
+    <label>{% if usuario_obj %}Nova senha (deixe em branco para manter a atual){% else %}Senha inicial{% endif %}</label>
+    <input type="text" name="password" value="{% if not usuario_obj %}{{ senha_padrao }}{% endif %}">
+    <p style="color:#666;font-size:0.8rem;">Padrão: {{ senha_padrao }}. Apague para gerar uma aleatória. O usuário terá que trocá-la no primeiro acesso.</p>
   </div>
   <div class="form-linha">
     <label><input type="checkbox" name="ativo" style="width:auto;display:inline-block;" {% if dados.ativo %}checked{% endif %}> Usuário ativo</label>

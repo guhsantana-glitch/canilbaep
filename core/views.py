@@ -42,6 +42,39 @@ def eh_superusuario(user):
     return user.is_superuser
 
 
+@login_required
+def trocar_senha_obrigatoria(request):
+    """Primeiro acesso: o usuário define sua senha definitiva."""
+    vinculo = getattr(request.user, "vinculo_canil", None)
+    if request.method == "POST":
+        from django.contrib.auth.password_validation import validate_password
+        from django.core.exceptions import ValidationError as ValidacaoErro
+        from django.contrib.auth import update_session_auth_hash
+
+        nova_senha = request.POST.get("nova_senha", "")
+        confirmar_senha = request.POST.get("confirmar_senha", "")
+        if not nova_senha:
+            messages.error(request, "Informe a nova senha.")
+        elif nova_senha != confirmar_senha:
+            messages.error(request, "As senhas não coincidem.")
+        else:
+            try:
+                validate_password(nova_senha, request.user)
+            except ValidacaoErro as erros:
+                for erro in erros.messages:
+                    messages.error(request, erro)
+                return render(request, "core/trocar_senha.html")
+            request.user.set_password(nova_senha)
+            request.user.save()
+            if vinculo is not None:
+                vinculo.senha_temporaria = False
+                vinculo.save()
+            update_session_auth_hash(request, request.user)
+            messages.success(request, "Senha alterada com sucesso! Bem-vindo ao sistema.")
+            return redirect("lista_caes")
+    return render(request, "core/trocar_senha.html")
+
+
 def exigir_canil(view):
     """Garante que o usuário esteja operando dentro de um canil.
 

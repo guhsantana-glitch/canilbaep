@@ -45,6 +45,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'canis.middleware.CanilMiddleware',
+    'canis.middleware.SenhaTemporariaMiddleware',
 ]
 
 ROOT_URLCONF = 'canil_baep.urls'

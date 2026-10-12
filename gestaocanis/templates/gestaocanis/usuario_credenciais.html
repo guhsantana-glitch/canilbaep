@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'gestao_usuarios' %}" class="btn btn-secundario">← Voltar</a>
+</div>
+<span class="eyebrow">Gestão geral</span>
+<h1>{% if novo %}Usuário criado{% else %}Senha redefinida{% endif %}</h1>
+<div class="card">
+  <p>Anote e entregue ao usuário <b>{{ usuario.username }}</b> ({{ canil.nome }}):</p>
+  <table>
+    <tr><td>Usuário</td><td>{{ usuario.username }}</td></tr>
+    <tr><td>Senha inicial</td><td>{{ senha }}</td></tr>
+  </table>
+  <p style="color:#666;font-size:0.88rem;">No primeiro acesso, o sistema vai obrigar a troca dessa senha. Ela não será exibida novamente.</p>
+  <div class="barra-acoes">
+    <a href="{% url 'gestao_usuarios' %}" class="btn">Concluir</a>
+  </div>
+</div>
+{% endblock %}

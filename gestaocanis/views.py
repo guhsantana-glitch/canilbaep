@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
 from canis.models import Canil, Unidade, VinculoUsuario
+from canis.senhas import SENHA_PADRAO, gerar_senha_aleatoria
 from core.models import Cao
 from .forms import CanilForm, UnidadeForm
 
@@ -152,7 +153,7 @@ def usuario_form_view(request, pk=None):
                  "canil_id": request.POST.get("canil", ""),
                  "papel": request.POST.get("papel", "operador"),
                  "ativo": request.POST.get("ativo") == "on"}
-        senha = request.POST.get("password", "")
+        senha = request.POST.get("password", "").strip()
         canil = Canil.objects.filter(pk=dados["canil_id"]).first()
         if not dados["username"]:
             erro = "Informe um nome de usuário."
@@ -160,20 +161,25 @@ def usuario_form_view(request, pk=None):
             erro = "Selecione um canil ativo."
         elif User.objects.filter(username=dados["username"]).exclude(pk=usuario.pk if usuario else None).exists():
             erro = "Já existe um usuário com esse nome."
-        elif usuario is None and not senha:
-            erro = "Defina uma senha para o novo usuário."
         else:
             if usuario is None:
+                # Em branco: gera aleatória. Padrão sugerido: canil123.
+                if not senha:
+                    senha = gerar_senha_aleatoria()
                 usuario = User.objects.create_user(
                     username=dados["username"], password=senha, first_name=dados["first_name"])
                 VinculoUsuario.objects.create(
-                    usuario=usuario, canil=canil, papel=dados["papel"], ativo=dados["ativo"])
-                messages.success(request, f"Usuário '{usuario.username}' criado no canil '{canil.nome}'.")
+                    usuario=usuario, canil=canil, papel=dados["papel"],
+                    ativo=dados["ativo"], senha_temporaria=True)
+                return render(request, "gestaocanis/usuario_credenciais.html", {
+                    "usuario": usuario, "canil": canil, "senha": senha, "novo": True,
+                })
             else:
                 usuario.username = dados["username"]
                 usuario.first_name = dados["first_name"]
                 if senha:
                     usuario.set_password(senha)
+                    vinculo.senha_temporaria = True
                 usuario.save()
                 vinculo.canil = canil
                 vinculo.papel = dados["papel"]
@@ -183,7 +189,7 @@ def usuario_form_view(request, pk=None):
             return redirect("gestao_usuarios")
     return render(request, "gestaocanis/usuario_form.html",
                   {"vinculo": vinculo, "usuario_obj": usuario, "canis": canis, "dados": dados, "erro": erro,
-                   "papeis": VinculoUsuario.PAPEL_CHOICES})
+                   "papeis": VinculoUsuario.PAPEL_CHOICES, "senha_padrao": SENHA_PADRAO})
 
 
 @gestor_required
@@ -201,12 +207,12 @@ def usuario_excluir(request, pk):
 def usuario_resetar_senha(request, pk):
     vinculo = get_object_or_404(VinculoUsuario, pk=pk)
     if request.method == "POST":
-        senha = request.POST.get("password", "").strip()
-        if len(senha) < 4:
-            messages.error(request, "A senha deve ter ao menos 4 caracteres.")
-            return redirect("gestao_usuarios")
+        senha = gerar_senha_aleatoria()
         vinculo.usuario.set_password(senha)
         vinculo.usuario.save()
-        messages.success(request, f"Senha de '{vinculo.usuario.username}' redefinida.")
-        return redirect("gestao_usuarios")
+        vinculo.senha_temporaria = True
+        vinculo.save()
+        return render(request, "gestaocanis/usuario_credenciais.html", {
+            "usuario": vinculo.usuario, "canil": vinculo.canil, "senha": senha, "novo": False,
+        })
     return render(request, "gestaocanis/usuario_senha.html", {"vinculo": vinculo})

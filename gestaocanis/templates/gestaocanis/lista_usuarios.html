@@ -7,7 +7,7 @@
 <h1>Usuários dos canis</h1>
 <div class="barra-acoes"><a href="{% url 'gestao_usuario_novo' %}" class="btn">+ Novo usuário</a></div>
 <table>
-  <tr><th>Usuário</th><th>Nome</th><th>Canil</th><th>Papel</th><th>Ativo</th><th></th></tr>
+  <tr><th>Usuário</th><th>Nome</th><th>Canil</th><th>Papel</th><th>Ativo</th><th>Senha</th><th></th></tr>
   {% for v in vinculos %}
   <tr>
     <td>{{ v.usuario.username }}</td>
@@ -15,12 +15,13 @@
     <td>{{ v.canil.nome }}</td>
     <td>{{ v.get_papel_display }}</td>
     <td>{% if v.ativo %}Sim{% else %}Não{% endif %}</td>
+    <td>{% if v.senha_temporaria %}<span class="tag tag-baixado">Troca pendente</span>{% else %}<span class="tag tag-ativo">Definitiva</span>{% endif %}</td>
     <td>
       <a href="{% url 'gestao_usuario_editar' v.pk %}">Editar</a> &middot;
       <a href="{% url 'gestao_usuario_senha' v.pk %}">Senha</a> &middot;
       <a href="{% url 'gestao_usuario_excluir' v.pk %}">Excluir</a>
     </td>
   </tr>
-  {% empty %}<tr><td colspan="6">Nenhum usuário vinculado ainda.</td></tr>{% endfor %}
+  {% empty %}<tr><td colspan="7">Nenhum usuário vinculado ainda.</td></tr>{% endfor %}
 </table>
 {% endblock %}

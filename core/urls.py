@@ -4,6 +4,7 @@ from . import views
 urlpatterns = [
     path("login/", views.CanilLoginView.as_view(), name="login"),
     path("logout/", views.CanilLogoutView.as_view(), name="logout"),
+    path("trocar-senha/", views.trocar_senha_obrigatoria, name="trocar_senha_obrigatoria"),
 
     path("", views.lista_caes, name="lista_caes"),
     path("caes/novo/", views.cao_form_view, name="cao_novo"),

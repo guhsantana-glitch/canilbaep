@@ -83,6 +83,10 @@ class VinculoUsuario(models.Model):
     )
     papel = models.CharField("Papel", max_length=20, choices=PAPEL_CHOICES, default="operador")
     ativo = models.BooleanField("Ativo", default=True)
+    senha_temporaria = models.BooleanField(
+        "Precisa trocar a senha no próximo login", default=False,
+        help_text="Marcado automaticamente quando a senha é definida na criação ou redefinição.",
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:

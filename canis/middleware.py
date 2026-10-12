@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 
 from .utils import canil_atual
 
@@ -45,5 +45,33 @@ class CanilMiddleware:
                 {"canil": vinculo.canil},
                 status=403,
             )
+
+        return self.get_response(request)
+
+
+class SenhaTemporariaMiddleware:
+    """Obriga a troca da senha definida na criação/redefinição antes de
+    acessar qualquer outra parte do sistema (superusuários não têm vínculo
+    e nunca são afetados)."""
+
+    ROTAS_ISENTAS = (
+        "/login/",
+        "/logout/",
+        "/trocar-senha/",
+        "/static/",
+        "/media/",
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        if request.path.startswith(self.ROTAS_ISENTAS):
+            return self.get_response(request)
+
+        if request.user.is_authenticated:
+            vinculo = getattr(request.user, "vinculo_canil", None)
+            if vinculo is not None and vinculo.senha_temporaria:
+                return redirect("trocar_senha_obrigatoria")
 
         return self.get_response(request)
