@@ -127,6 +127,17 @@ class Cao(models.Model):
         ultima = self.pesagens.order_by("-data").first()
         return ultima.peso_kg if ultima else None
 
+    @property
+    def tem_foto(self):
+        """True só se há foto cadastrada E o arquivo realmente existe
+        (evita quadro em branco quando o arquivo foi perdido)."""
+        if not self.foto:
+            return False
+        try:
+            return self.foto.storage.exists(self.foto.name)
+        except Exception:
+            return False
+
     def idade_aproximada(self):
         if not self.data_nascimento:
             return None
