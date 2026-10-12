@@ -223,7 +223,7 @@ def gerar_relatorio_mensal(cao, data_inicio, data_fim, pesagens, vacinas, medica
     # Vacinas
     story.append(Paragraph("Vacinas", styles["Heading2"]))
     if vacinas:
-        dados = [["Tipo", "Aplicação", "Próxima dose", "Veterinário"]]
+        dados = [["Tipo", "Vacinação em", "Revacinar em", "Veterinário"]]
         for v in vacinas:
             dados.append([
                 v.tipo.nome, v.data_aplicacao.strftime("%d/%m/%Y"),

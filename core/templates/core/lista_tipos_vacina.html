@@ -8,12 +8,12 @@
 <p style="color:#666;font-size:0.88rem;">Cadastre aqui os tipos de vacina disponíveis para seleção ao registrar uma aplicação na ficha do cão.</p>
 <div class="barra-acoes"><a href="{% url 'tipo_vacina_novo' %}" class="btn">+ Novo tipo de vacina</a></div>
 <table>
-  <tr><th>Nome</th><th>Descrição</th><th>Ativo</th><th></th></tr>
+  <tr><th>Nome da vacina</th><th>Nome comercial</th><th>Fabricante</th><th>Partida</th><th>Fabricação</th><th>Validade</th><th>Ativo</th><th></th></tr>
   {% for t in tipos %}
   <tr>
-    <td>{{ t.nome }}</td><td>{{ t.descricao|default:"-" }}</td><td>{% if t.ativo %}Sim{% else %}Não{% endif %}</td>
+    <td>{{ t.nome }}</td><td>{{ t.nome_comercial|default:"-" }}</td><td>{{ t.fabricante|default:"-" }}</td><td>{{ t.partida|default:"-" }}</td><td>{{ t.data_fabricacao|date:"d/m/Y"|default:"-" }}</td><td>{{ t.data_validade|date:"d/m/Y"|default:"-" }}</td><td>{% if t.ativo %}Sim{% else %}Não{% endif %}</td>
     <td><a href="{% url 'tipo_vacina_editar' t.pk %}">Editar</a> &middot; <a href="{% url 'tipo_vacina_excluir' t.pk %}">Excluir</a></td>
   </tr>
-  {% empty %}<tr><td colspan="4">Nenhum tipo de vacina cadastrado.</td></tr>{% endfor %}
+  {% empty %}<tr><td colspan="8">Nenhum tipo de vacina cadastrado.</td></tr>{% endfor %}
 </table>
 {% endblock %}

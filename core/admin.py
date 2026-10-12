@@ -130,5 +130,5 @@ class VisitaTecnicaAdmin(admin.ModelAdmin):
 
 @admin.register(TipoVacina)
 class TipoVacinaAdmin(admin.ModelAdmin):
-    list_display = ("nome", "descricao", "ativo")
+    list_display = ("nome", "nome_comercial", "fabricante", "partida", "data_validade", "ativo")
     list_filter = ("ativo",)

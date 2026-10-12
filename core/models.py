@@ -21,6 +21,11 @@ class Veterinario(models.Model):
 
 class TipoVacina(models.Model):
     nome = models.CharField("Nome da vacina", max_length=100, unique=True)
+    nome_comercial = models.CharField("Nome comercial", max_length=100, blank=True)
+    fabricante = models.CharField("Fabricante", max_length=100, blank=True)
+    partida = models.CharField("Partida", max_length=60, blank=True)
+    data_fabricacao = models.DateField("Data de fabricação", null=True, blank=True)
+    data_validade = models.DateField("Data de validade", null=True, blank=True)
     descricao = models.CharField("Descrição", max_length=200, blank=True)
     ativo = models.BooleanField("Ativo", default=True)
 

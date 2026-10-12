@@ -44,14 +44,18 @@ class VeterinarioForm(forms.ModelForm):
 
 
 class TipoVacinaForm(forms.ModelForm):
+    data_fabricacao = DataISOField(label="Data de fabricação", required=False)
+    data_validade = DataISOField(label="Data de validade", required=False)
+
     class Meta:
         model = TipoVacina
-        fields = ["nome", "descricao", "ativo"]
+        fields = ["nome", "nome_comercial", "fabricante", "partida",
+                  "data_fabricacao", "data_validade", "descricao", "ativo"]
 
 
 class VacinaForm(forms.ModelForm):
-    data_aplicacao = DataISOField(label="Data de aplicação")
-    data_proxima_dose = DataISOField(label="Próxima dose", required=False)
+    data_aplicacao = DataISOField(label="Data da vacinação")
+    data_proxima_dose = DataISOField(label="Revacinar em", required=False)
 
     class Meta:
         model = Vacina
