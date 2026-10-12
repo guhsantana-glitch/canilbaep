@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'gestao_unidades' %}" class="btn btn-secundario">← Voltar</a>
+</div>
+<span class="eyebrow">{% if unidade %}Editar{% else %}Nova{% endif %}</span>
+<h1>{% if unidade %}Editar {{ unidade.nome }}{% else %}Nova unidade{% endif %}</h1>
+<form method="post" class="card">
+  {% csrf_token %}
+  {% for field in form %}
+  <div class="form-linha">
+    <label>{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}<p style="color:#666;font-size:0.8rem;">{{ field.help_text }}</p>{% endif %}
+    {% if field.errors %}<p style="color:#8a3324;font-size:0.8rem;">{{ field.errors|striptags }}</p>{% endif %}
+  </div>
+  {% endfor %}
+  <button class="btn" type="submit">Salvar</button>
+  <a href="{% url 'gestao_unidades' %}" class="btn btn-secundario">Cancelar</a>
+</form>
+{% endblock %}

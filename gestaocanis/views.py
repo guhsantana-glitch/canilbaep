@@ -3,9 +3,9 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 
-from canis.models import Canil, VinculoUsuario
+from canis.models import Canil, Unidade, VinculoUsuario
 from core.models import Cao
-from .forms import CanilForm
+from .forms import CanilForm, UnidadeForm
 
 
 def eh_gestor(user):
@@ -32,10 +32,53 @@ def painel(request):
         "linhas": linhas,
         "total_canis": canis.count(),
         "total_ativos": canis.filter(ativo=True).count(),
+        "total_unidades": Unidade.objects.count(),
         "total_caes": total_caes,
         "total_usuarios": total_usuarios,
         "canil_em_uso": request.session.get("canil_id"),
     })
+
+
+# ---------- Unidades ----------
+
+@gestor_required
+def lista_unidades(request):
+    unidades = Unidade.objects.all().order_by("nome")
+    linhas = []
+    for unidade in unidades:
+        linhas.append({
+            "unidade": unidade,
+            "canis": unidade.canis.count(),
+        })
+    return render(request, "gestaocanis/lista_unidades.html", {"linhas": linhas})
+
+
+@gestor_required
+def unidade_form_view(request, pk=None):
+    unidade = get_object_or_404(Unidade, pk=pk) if pk else None
+    if request.method == "POST":
+        form = UnidadeForm(request.POST, instance=unidade)
+        if form.is_valid():
+            unidade = form.save()
+            messages.success(request, f"Unidade '{unidade.nome}' salva com sucesso.")
+            return redirect("gestao_unidades")
+    else:
+        form = UnidadeForm(instance=unidade)
+    return render(request, "gestaocanis/unidade_form.html", {"form": form, "unidade": unidade})
+
+
+@gestor_required
+def unidade_excluir(request, pk):
+    unidade = get_object_or_404(Unidade, pk=pk)
+    if unidade.canis.exists():
+        messages.error(request, "Não é possível excluir: há canis vinculados a esta unidade. Desative-a em vez disso.")
+        return redirect("gestao_unidades")
+    if request.method == "POST":
+        nome = unidade.nome
+        unidade.delete()
+        messages.success(request, f"Unidade '{nome}' excluída.")
+        return redirect("gestao_unidades")
+    return render(request, "core/confirmar_exclusao.html", {"objeto": unidade, "tipo": "unidade"})
 
 
 @gestor_required

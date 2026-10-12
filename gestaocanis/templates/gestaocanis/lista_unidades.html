@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'gestao_painel' %}" class="btn btn-secundario">← Voltar</a>
+</div>
+<span class="eyebrow">Gestão geral</span>
+<h1>Unidades com acesso ao sistema</h1>
+<div class="barra-acoes"><a href="{% url 'gestao_unidade_nova' %}" class="btn">+ Nova unidade</a></div>
+<table>
+  <tr><th>Unidade</th><th>Cidade sede</th><th>Comandante</th><th>Canis</th><th>Situação</th><th></th></tr>
+  {% for l in linhas %}
+  <tr>
+    <td><b>{{ l.unidade.nome }}</b></td>
+    <td>{{ l.unidade.cidade_sede|default:"-" }}</td>
+    <td>{{ l.unidade.comandante|default:"-" }}</td>
+    <td>{{ l.canis }}</td>
+    <td>{% if l.unidade.ativo %}<span class="tag tag-ativo">Ativa</span>{% else %}<span class="tag tag-baixado">Inativa</span>{% endif %}</td>
+    <td>
+      <a href="{% url 'gestao_unidade_editar' l.unidade.pk %}">Editar</a> &middot;
+      <a href="{% url 'gestao_unidade_excluir' l.unidade.pk %}">Excluir</a>
+    </td>
+  </tr>
+  {% empty %}<tr><td colspan="6">Nenhuma unidade cadastrada.</td></tr>{% endfor %}
+</table>
+{% endblock %}

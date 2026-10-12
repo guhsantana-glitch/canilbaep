@@ -2,11 +2,41 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+class Unidade(models.Model):
+    """Batalhão/Unidade da PM que terá acesso ao sistema (ex: 10º BAEP).
+
+    Cada unidade pode ter um ou mais canis setoriais.
+    """
+
+    nome = models.CharField("Nome da unidade (ex: 10º BAEP)", max_length=150, unique=True)
+    cidade_sede = models.CharField("Cidade sede", max_length=100, blank=True)
+    comandante = models.CharField("Comandante responsável", max_length=150, blank=True)
+    telefone = models.CharField("Telefone", max_length=20, blank=True)
+    email = models.EmailField("E-mail", blank=True)
+    ativo = models.BooleanField(
+        "Ativa", default=True,
+        help_text="Unidade desativada bloqueia a criação de novos canis nela.",
+    )
+    observacoes = models.TextField("Observações", blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Unidade"
+        verbose_name_plural = "Unidades"
+        ordering = ["nome"]
+
+    def __str__(self):
+        return self.nome
+
+
 class Canil(models.Model):
     """Cada canil setorial da PM que utiliza o sistema (tenant)."""
 
+    unidade = models.ForeignKey(
+        Unidade, on_delete=models.PROTECT, related_name="canis",
+        verbose_name="Unidade",
+    )
     nome = models.CharField("Nome do canil", max_length=150)
-    unidade = models.CharField("Batalhão/Unidade (ex: 10º BAEP)", max_length=100, blank=True)
     cidade = models.CharField("Cidade", max_length=100, blank=True)
     responsavel = models.CharField("Responsável", max_length=150, blank=True)
     telefone = models.CharField("Telefone", max_length=20, blank=True)

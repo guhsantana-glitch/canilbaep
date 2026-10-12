@@ -3,6 +3,10 @@ from . import views
 
 urlpatterns = [
     path("", views.painel, name="gestao_painel"),
+    path("unidades/", views.lista_unidades, name="gestao_unidades"),
+    path("unidades/nova/", views.unidade_form_view, name="gestao_unidade_nova"),
+    path("unidades/<int:pk>/editar/", views.unidade_form_view, name="gestao_unidade_editar"),
+    path("unidades/<int:pk>/excluir/", views.unidade_excluir, name="gestao_unidade_excluir"),
     path("canis/novo/", views.canil_form_view, name="gestao_canil_novo"),
     path("canis/<int:pk>/editar/", views.canil_form_view, name="gestao_canil_editar"),
     path("canis/<int:pk>/excluir/", views.canil_excluir, name="gestao_canil_excluir"),
