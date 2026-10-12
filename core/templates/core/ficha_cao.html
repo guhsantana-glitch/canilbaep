@@ -25,61 +25,117 @@
   {% if cao.observacoes %}<p style="margin-top:0.8rem;"><b>Outras observações:</b> {{ cao.observacoes }}</p>{% endif %}
 </div>
 
-<h2>Pesagens <a href="{% url 'pesagem_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<table>
-  <tr><th>Data</th><th>Peso (kg)</th><th>Observações</th><th></th></tr>
-  {% for p in pesagens %}<tr><td>{{ p.data|date:"d/m/Y" }}</td><td>{{ p.peso_kg }}</td><td>{{ p.observacoes|default:"-" }}</td>
-    <td><a href="{% url 'pesagem_editar' cao.pk p.pk %}">Editar</a> &middot; <a href="{% url 'pesagem_excluir' cao.pk p.pk %}">Excluir</a></td></tr>
-  {% empty %}<tr><td colspan="4">Nenhuma pesagem registrada.</td></tr>{% endfor %}
-</table>
+<h2><span class="secao-titulo">Pesagens <span class="contador">{{ pesagens|length }}</span></span> <a href="{% url 'pesagem_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<div class="lista-registros">
+  {% for p in pesagens %}
+  <div class="registro">
+    <div class="principal">
+      <div class="titulo">{{ p.data|date:"d/m/Y" }}{% if p.observacoes %} · {{ p.observacoes }}{% endif %}</div>
+    </div>
+    <div class="destaque">{{ p.peso_kg }} kg</div>
+    <div class="acoes">
+      <a class="link-acao" href="{% url 'pesagem_editar' cao.pk p.pk %}">Editar</a>
+      <a class="link-acao perigo" href="{% url 'pesagem_excluir' cao.pk p.pk %}">Excluir</a>
+    </div>
+  </div>
+  {% empty %}<div class="vazio">Nenhuma pesagem registrada.</div>{% endfor %}
+</div>
 
-<h2>Vacinas <a href="{% url 'vacina_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<table>
-  <tr><th>Tipo</th><th>Vacinação em</th><th>Revacinar em</th><th>Veterinário</th><th></th></tr>
-  {% for v in vacinas %}<tr><td>{{ v.tipo.nome }}{% if v.tipo.nome_comercial %} ({{ v.tipo.nome_comercial }}){% endif %}</td><td>{{ v.data_aplicacao|date:"d/m/Y" }}</td><td>{{ v.data_proxima_dose|date:"d/m/Y"|default:"-" }}</td><td>{{ v.veterinario.nome|default:"-" }}</td>
-    <td><a href="{% url 'vacina_editar' cao.pk v.pk %}">Editar</a> &middot; <a href="{% url 'vacina_excluir' cao.pk v.pk %}">Excluir</a></td></tr>
-  {% empty %}<tr><td colspan="5">Nenhuma vacina registrada.</td></tr>{% endfor %}
-</table>
+<h2><span class="secao-titulo">Vacinas <span class="contador">{{ vacinas|length }}</span></span> <a href="{% url 'vacina_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<div class="lista-registros">
+  {% for v in vacinas %}
+  <div class="registro {% if v.data_proxima_dose and v.data_proxima_dose < hoje %}alerta{% elif v.data_proxima_dose %}ok{% endif %}">
+    <div class="principal">
+      <div class="titulo">{{ v.tipo.nome }}{% if v.tipo.nome_comercial %} ({{ v.tipo.nome_comercial }}){% endif %}{% if v.data_proxima_dose %}{% if v.data_proxima_dose < hoje %}<span class="pill pill-vermelha">Revacinar</span>{% else %}<span class="pill pill-verde">Em dia</span>{% endif %}{% endif %}</div>
+      <div class="meta">Vacinado em {{ v.data_aplicacao|date:"d/m/Y" }}{% if v.data_proxima_dose %} · Revacinar em {{ v.data_proxima_dose|date:"d/m/Y" }}{% endif %} · {{ v.veterinario.nome|default:"Sem veterinário" }}</div>
+    </div>
+    <div class="acoes">
+      <a class="link-acao" href="{% url 'vacina_editar' cao.pk v.pk %}">Editar</a>
+      <a class="link-acao perigo" href="{% url 'vacina_excluir' cao.pk v.pk %}">Excluir</a>
+    </div>
+  </div>
+  {% empty %}<div class="vazio">Nenhuma vacina registrada.</div>{% endfor %}
+</div>
 
-<h2>Vermifugações <a href="{% url 'vermifugacao_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<table>
-  <tr><th>Vermífugo</th><th>Aplicação</th><th>Veterinário</th><th>Lote</th><th></th></tr>
-  {% for v in vermifugacoes %}<tr><td>{{ v.vermifugo }}</td><td>{{ v.data_aplicacao|date:"d/m/Y" }}</td><td>{{ v.veterinario.nome|default:"-" }}</td><td>{{ v.lote|default:"-" }}</td>
-    <td><a href="{% url 'vermifugacao_editar' cao.pk v.pk %}">Editar</a> &middot; <a href="{% url 'vermifugacao_excluir' cao.pk v.pk %}">Excluir</a></td></tr>
-  {% empty %}<tr><td colspan="5">Nenhuma vermifugação registrada.</td></tr>{% endfor %}
-</table>
+<h2><span class="secao-titulo">Vermifugações <span class="contador">{{ vermifugacoes|length }}</span></span> <a href="{% url 'vermifugacao_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<div class="lista-registros">
+  {% for v in vermifugacoes %}
+  <div class="registro">
+    <div class="principal">
+      <div class="titulo">{{ v.vermifugo }}</div>
+      <div class="meta">Aplicado em {{ v.data_aplicacao|date:"d/m/Y" }} · {{ v.veterinario.nome|default:"Sem veterinário" }}{% if v.lote %} · Lote {{ v.lote }}{% endif %}</div>
+    </div>
+    <div class="acoes">
+      <a class="link-acao" href="{% url 'vermifugacao_editar' cao.pk v.pk %}">Editar</a>
+      <a class="link-acao perigo" href="{% url 'vermifugacao_excluir' cao.pk v.pk %}">Excluir</a>
+    </div>
+  </div>
+  {% empty %}<div class="vazio">Nenhuma vermifugação registrada.</div>{% endfor %}
+</div>
 
-<h2>Controle de ectoparasitas <a href="{% url 'ectoparasita_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<table>
-  <tr><th>Procedimento</th><th>Aplicação em</th><th>Veterinário</th><th></th></tr>
-  {% for e in ectoparasitas %}<tr><td>{{ e.procedimento }}</td><td>{{ e.data_aplicacao|date:"d/m/Y" }}</td><td>{{ e.veterinario.nome|default:"-" }}</td>
-    <td><a href="{% url 'ectoparasita_editar' cao.pk e.pk %}">Editar</a> &middot; <a href="{% url 'ectoparasita_excluir' cao.pk e.pk %}">Excluir</a></td></tr>
-  {% empty %}<tr><td colspan="4">Nenhum controle de ectoparasita registrado.</td></tr>{% endfor %}
-</table>
+<h2><span class="secao-titulo">Controle de ectoparasitas <span class="contador">{{ ectoparasitas|length }}</span></span> <a href="{% url 'ectoparasita_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<div class="lista-registros">
+  {% for e in ectoparasitas %}
+  <div class="registro">
+    <div class="principal">
+      <div class="titulo">{{ e.procedimento }}</div>
+      <div class="meta">Aplicado em {{ e.data_aplicacao|date:"d/m/Y" }} · {{ e.veterinario.nome|default:"Sem veterinário" }}</div>
+    </div>
+    <div class="acoes">
+      <a class="link-acao" href="{% url 'ectoparasita_editar' cao.pk e.pk %}">Editar</a>
+      <a class="link-acao perigo" href="{% url 'ectoparasita_excluir' cao.pk e.pk %}">Excluir</a>
+    </div>
+  </div>
+  {% empty %}<div class="vazio">Nenhum controle de ectoparasita registrado.</div>{% endfor %}
+</div>
 
-<h2>Saúde — anormalidades <a href="{% url 'ocorrencia_saude_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<table>
-  <tr><th>Anormalidade</th><th>Data</th><th>Méd. veterinário</th><th>Medicamento</th><th></th></tr>
-  {% for o in ocorrencias_saude %}<tr><td>{{ o.anormalidade }}</td><td>{{ o.data|date:"d/m/Y" }}</td><td>{{ o.veterinario.nome|default:"-" }}</td><td>{{ o.medicamento|default:"-" }}</td>
-    <td><a href="{% url 'ocorrencia_saude_editar' cao.pk o.pk %}">Editar</a> &middot; <a href="{% url 'ocorrencia_saude_excluir' cao.pk o.pk %}">Excluir</a></td></tr>
-  {% empty %}<tr><td colspan="5">Nenhuma ocorrência de saúde registrada.</td></tr>{% endfor %}
-</table>
+<h2><span class="secao-titulo">Saúde — anormalidades <span class="contador">{{ ocorrencias_saude|length }}</span></span> <a href="{% url 'ocorrencia_saude_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<div class="lista-registros">
+  {% for o in ocorrencias_saude %}
+  <div class="registro alerta">
+    <div class="principal">
+      <div class="titulo">{{ o.anormalidade }}</div>
+      <div class="meta">{{ o.data|date:"d/m/Y" }} · {{ o.veterinario.nome|default:"Sem veterinário" }}{% if o.medicamento %} · {{ o.medicamento }}{% endif %}</div>
+    </div>
+    <div class="acoes">
+      <a class="link-acao" href="{% url 'ocorrencia_saude_editar' cao.pk o.pk %}">Editar</a>
+      <a class="link-acao perigo" href="{% url 'ocorrencia_saude_excluir' cao.pk o.pk %}">Excluir</a>
+    </div>
+  </div>
+  {% empty %}<div class="vazio">Nenhuma ocorrência de saúde registrada.</div>{% endfor %}
+</div>
 
-<h2>Visitas técnicas veterinárias <a href="{% url 'visita_tecnica_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<table>
-  <tr><th>Data</th><th>Post/Grad/Médico veterinário</th><th>Observações</th><th></th></tr>
-  {% for v in visitas_tecnicas %}<tr><td>{{ v.data|date:"d/m/Y" }}</td><td>{{ v.medico_veterinario }}</td><td>{{ v.observacoes|default:"-"|truncatechars:60 }}</td>
-    <td><a href="{% url 'visita_tecnica_editar' cao.pk v.pk %}">Editar</a> &middot; <a href="{% url 'visita_tecnica_excluir' cao.pk v.pk %}">Excluir</a></td></tr>
-  {% empty %}<tr><td colspan="4">Nenhuma visita técnica registrada.</td></tr>{% endfor %}
-</table>
+<h2><span class="secao-titulo">Visitas técnicas veterinárias <span class="contador">{{ visitas_tecnicas|length }}</span></span> <a href="{% url 'visita_tecnica_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<div class="lista-registros">
+  {% for v in visitas_tecnicas %}
+  <div class="registro">
+    <div class="principal">
+      <div class="titulo">{{ v.data|date:"d/m/Y" }} · {{ v.medico_veterinario }}</div>
+      {% if v.observacoes %}<div class="meta">{{ v.observacoes|truncatechars:120 }}</div>{% endif %}
+    </div>
+    <div class="acoes">
+      <a class="link-acao" href="{% url 'visita_tecnica_editar' cao.pk v.pk %}">Editar</a>
+      <a class="link-acao perigo" href="{% url 'visita_tecnica_excluir' cao.pk v.pk %}">Excluir</a>
+    </div>
+  </div>
+  {% empty %}<div class="vazio">Nenhuma visita técnica registrada.</div>{% endfor %}
+</div>
 
-<h2>Medicamentos <a href="{% url 'medicamento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<table>
-  <tr><th>Medicamento</th><th>Dosagem</th><th>Início</th><th>Fim</th><th>Motivo</th><th>Veterinário</th><th></th></tr>
-  {% for m in medicamentos %}<tr><td>{{ m.nome }}</td><td>{{ m.dosagem }}</td><td>{{ m.data_inicio|date:"d/m/Y" }}</td><td>{{ m.data_fim|date:"d/m/Y"|default:"-" }}</td><td>{{ m.motivo|default:"-" }}</td><td>{{ m.veterinario.nome|default:"-" }}</td>
-    <td><a href="{% url 'medicamento_editar' cao.pk m.pk %}">Editar</a> &middot; <a href="{% url 'medicamento_excluir' cao.pk m.pk %}">Excluir</a></td></tr>
-  {% empty %}<tr><td colspan="7">Nenhum medicamento registrado.</td></tr>{% endfor %}
-</table>
+<h2><span class="secao-titulo">Medicamentos <span class="contador">{{ medicamentos|length }}</span></span> <a href="{% url 'medicamento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<div class="lista-registros">
+  {% for m in medicamentos %}
+  <div class="registro">
+    <div class="principal">
+      <div class="titulo">{{ m.nome }} · {{ m.dosagem }}{% if not m.data_fim or m.data_fim >= hoje %}<span class="pill pill-verde">Em uso</span>{% else %}<span class="pill pill-cinza">Encerrado</span>{% endif %}</div>
+      <div class="meta">{{ m.data_inicio|date:"d/m/Y" }} a {{ m.data_fim|date:"d/m/Y"|default:"—" }}{% if m.motivo %} · {{ m.motivo }}{% endif %} · {{ m.veterinario.nome|default:"Sem veterinário" }}</div>
+    </div>
+    <div class="acoes">
+      <a class="link-acao" href="{% url 'medicamento_editar' cao.pk m.pk %}">Editar</a>
+      <a class="link-acao perigo" href="{% url 'medicamento_excluir' cao.pk m.pk %}">Excluir</a>
+    </div>
+  </div>
+  {% empty %}<div class="vazio">Nenhum medicamento registrado.</div>{% endfor %}
+</div>
 
 <h2>Evolução do treinamento (nota por avaliação)</h2>
 <div class="card">
@@ -110,19 +166,36 @@
   {% endif %}
 </div>
 
-<h2>Treinamentos <a href="{% url 'treinamento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<table>
-  <tr><th>Data</th><th>Etapa</th><th>Descrição</th><th>Resultado</th><th>Nota</th><th>Instrutor</th><th></th></tr>
-  {% for t in treinamentos %}<tr><td>{{ t.data|date:"d/m/Y" }}</td><td>{{ t.get_etapa_display }}</td><td>{{ t.descricao|truncatechars:60 }}</td><td>{{ t.resultado|default:"-" }}</td><td>{{ t.nota_avaliacao|default:"-" }}</td><td>{{ t.instrutor|default:"-" }}</td>
-    <td><a href="{% url 'treinamento_editar' cao.pk t.pk %}">Editar</a> &middot; <a href="{% url 'treinamento_excluir' cao.pk t.pk %}">Excluir</a></td></tr>
-  {% empty %}<tr><td colspan="7">Nenhum treinamento registrado.</td></tr>{% endfor %}
-</table>
+<h2><span class="secao-titulo">Treinamentos <span class="contador">{{ treinamentos|length }}</span></span> <a href="{% url 'treinamento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<div class="lista-registros">
+  {% for t in treinamentos %}
+  <div class="registro">
+    <div class="principal">
+      <div class="titulo">{{ t.get_etapa_display }}{% if t.nota_avaliacao %}<span class="pill pill-cinza">Nota {{ t.nota_avaliacao }}</span>{% endif %}</div>
+      <div class="meta">{{ t.data|date:"d/m/Y" }}{% if t.instrutor %} · {{ t.instrutor }}{% endif %}{% if t.resultado %} · {{ t.resultado }}{% endif %}</div>
+      {% if t.descricao %}<div class="meta">{{ t.descricao|truncatechars:140 }}</div>{% endif %}
+    </div>
+    <div class="acoes">
+      <a class="link-acao" href="{% url 'treinamento_editar' cao.pk t.pk %}">Editar</a>
+      <a class="link-acao perigo" href="{% url 'treinamento_excluir' cao.pk t.pk %}">Excluir</a>
+    </div>
+  </div>
+  {% empty %}<div class="vazio">Nenhum treinamento registrado.</div>{% endfor %}
+</div>
 
-<h2>Documentos e exames <a href="{% url 'documento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Anexar</a></h2>
-<table>
-  <tr><th>Tipo</th><th>Título</th><th>Data</th><th>Arquivo</th><th></th></tr>
-  {% for d in documentos %}<tr><td>{{ d.get_tipo_display }}</td><td>{{ d.titulo }}</td><td>{{ d.data_documento|date:"d/m/Y"|default:"-" }}</td><td><a href="{{ d.arquivo.url }}" target="_blank">Abrir</a></td>
-    <td><a href="{% url 'documento_excluir' cao.pk d.pk %}">Excluir</a></td></tr>
-  {% empty %}<tr><td colspan="5">Nenhum documento anexado.</td></tr>{% endfor %}
-</table>
+<h2><span class="secao-titulo">Documentos e exames <span class="contador">{{ documentos|length }}</span></span> <a href="{% url 'documento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Anexar</a></h2>
+<div class="lista-registros">
+  {% for d in documentos %}
+  <div class="registro">
+    <div class="principal">
+      <div class="titulo">{{ d.titulo }}</div>
+      <div class="meta">{{ d.get_tipo_display }}{% if d.data_documento %} · {{ d.data_documento|date:"d/m/Y" }}{% endif %}</div>
+    </div>
+    <div class="acoes">
+      <a class="link-acao" href="{{ d.arquivo.url }}" target="_blank">Abrir</a>
+      <a class="link-acao perigo" href="{% url 'documento_excluir' cao.pk d.pk %}">Excluir</a>
+    </div>
+  </div>
+  {% empty %}<div class="vazio">Nenhum documento anexado.</div>{% endfor %}
+</div>
 {% endblock %}

@@ -6,6 +6,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.urls import reverse
 from django.db.models import Q
+from django.utils import timezone
 from functools import wraps
 
 from canis.utils import canil_atual
@@ -138,6 +139,7 @@ def ficha_cao(request, pk):
     ]
     return render(request, "core/ficha_cao.html", {
         "cao": cao,
+        "hoje": timezone.now().date(),
         "pesagens": cao.pesagens.all()[:30],
         "vacinas": cao.vacinas.select_related("tipo", "veterinario").all(),
         "vermifugacoes": cao.vermifugacoes.select_related("veterinario").all(),

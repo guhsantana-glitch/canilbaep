@@ -233,6 +233,26 @@ tbody tr:hover td{background:var(--azul-claro);}
 .msg-warning{background:#fdf3e0;color:#8a5a17;border:1px solid #f0dcae;}
 .msg-info{background:var(--azul-claro);color:var(--azul-escuro);border:1px solid var(--azul-claro2);}
 .filtro-barra{display:flex;gap:.8rem;align-items:end;flex-wrap:wrap;margin-bottom:.8rem;background:#fff;border:1px solid var(--borda);border-radius:var(--raio);padding:1rem 1.2rem;box-shadow:var(--sombra);}
+.secao-titulo{display:flex;align-items:center;gap:.6rem;}
+.contador{display:inline-flex;align-items:center;justify-content:center;min-width:1.6rem;height:1.6rem;padding:0 .45rem;border-radius:999px;background:var(--azul-claro2);color:var(--azul-escuro);font-size:.78rem;}
+.lista-registros{display:grid;gap:.65rem;margin-top:.8rem;}
+.registro{background:#fff;border:1px solid var(--borda);border-left:4px solid var(--azul-medio);border-radius:12px;padding:.75rem 1rem;display:flex;gap:1rem;align-items:center;box-shadow:var(--sombra);}
+.registro.alerta{border-left-color:var(--alerta);}
+.registro.ok{border-left-color:#3d9a6c;}
+.registro .principal{flex:1;min-width:0;}
+.registro .titulo{font-size:.96rem;color:var(--azul-profundo);overflow:hidden;text-overflow:ellipsis;}
+.registro .meta{font-size:.8rem;color:var(--texto-suave);margin-top:.15rem;}
+.registro .destaque{font-size:1.05rem;color:var(--azul-escuro);white-space:nowrap;}
+.registro .acoes{display:flex;gap:.1rem;flex-shrink:0;}
+.link-acao{color:var(--azul-medio);font-size:.8rem;text-decoration:none;padding:.35rem .55rem;border-radius:7px;white-space:nowrap;}
+.link-acao:hover{background:var(--azul-claro);}
+.link-acao.perigo{color:var(--alerta);}
+.link-acao.perigo:hover{background:#f9e4e2;}
+.pill{display:inline-block;padding:.12rem .6rem;border-radius:999px;font-size:.72rem;margin-left:.4rem;vertical-align:middle;}
+.pill-vermelha{background:#f6dfdd;color:var(--alerta);}
+.pill-verde{background:#dcf0e6;color:#1f7a52;}
+.pill-cinza{background:#eceff1;color:#5b6f7c;}
+.vazio{background:#fff;border:1px dashed var(--borda);border-radius:12px;padding:.9rem 1.1rem;color:var(--texto-suave);font-size:.86rem;margin-top:.8rem;}
 footer{text-align:center;padding:1.4rem;color:#93a5b1;font-size:.78rem;border-top:1px solid var(--borda);margin-top:1rem;}
 </style>
 </head>
