@@ -108,6 +108,26 @@ Não use o Postgres do Render (o plano free expira e apaga os dados).
 > abertura demora ~1 min); fotos/documentos somem a cada novo deploy
 > (disco efêmero) — quando quiser, evoluímos para armazenamento externo.
 
+## 4. Fotos e documentos permanentes (Cloudflare R2 — gratuito)
+
+Sem isso, fotos/documentos enviados no site somem a cada deploy do Render.
+Com o R2 (10 GB gratuitos), viram uma "pasta na nuvem" permanente:
+
+1. Crie conta em https://dash.cloudflare.com → **R2 Object Storage** → **Create bucket**
+   (`canilbaep-media`) → na aba **Settings** do bucket, libere o **Public Development URL**
+   (`pub-xxxx.r2.dev`).
+2. Em **R2 → Manage R2 API Tokens → Create API Token** (permissão
+   **Object Read & Write** no bucket) → anote Access Key, Secret Key e o
+   Endpoint (`https://xxxx.r2.cloudflarestorage.com`).
+3. No Render → serviço `canilbaep` → **Environment**, adicione:
+   - `R2_BUCKET=canilbaep-media`
+   - `R2_ENDPOINT_URL=https://xxxx.r2.cloudflarestorage.com`
+   - `R2_ACCESS_KEY=...`
+   - `R2_SECRET_KEY=...`
+   - `R2_PUBLIC_URL=pub-xxxx.r2.dev`
+4. Redeploy. Novos uploads passam a ir para o R2 e sobrevivem aos deploys.
+   (Arquivos antigos precisam ser re-anexados uma vez.)
+
 ## Próximos incrementos sugeridos
 
 - Alertas automáticos de vacinas/próximas doses vencendo

@@ -106,6 +106,34 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# === Arquivos na nuvem (Cloudflare R2, gratuito) ===
+# Sem essas variáveis, usa a pasta local (desenvolvimento).
+# Com elas, fotos/documentos vão para o bucket R2 e sobrevivem aos
+# deploys do Render (cujo disco é efêmero e apaga tudo a cada deploy).
+# Veja o README (seção Deploy) para criar o bucket e as chaves.
+R2_BUCKET = os.environ.get("R2_BUCKET", "")
+if R2_BUCKET:
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "access_key": os.environ.get("R2_ACCESS_KEY", ""),
+                "secret_key": os.environ.get("R2_SECRET_KEY", ""),
+                "bucket_name": R2_BUCKET,
+                "endpoint_url": os.environ.get("R2_ENDPOINT_URL", ""),
+                "region_name": "auto",
+                "default_acl": None,
+                "querystring_auth": False,
+                "custom_domain": os.environ.get("R2_PUBLIC_URL", ""),
+                "location": "media",
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
+    MEDIA_URL = f'https://{os.environ.get("R2_PUBLIC_URL", "")}/media/'
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
