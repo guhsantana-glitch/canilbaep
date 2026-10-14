@@ -87,6 +87,10 @@ class VinculoUsuario(models.Model):
         "Precisa trocar a senha no próximo login", default=False,
         help_text="Marcado automaticamente quando a senha é definida na criação ou redefinição.",
     )
+    senha_temporaria_em = models.DateTimeField(
+        "Senha temporária emitida em", null=True, blank=True,
+        help_text="Início do prazo de 7 dias para a troca. Vínculos antigos sem data usam a data de criação.",
+    )
     criado_em = models.DateTimeField(auto_now_add=True)
 
     class Meta:

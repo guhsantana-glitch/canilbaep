@@ -5,6 +5,7 @@ from .utils import canil_atual
 ROTAS_ISENTAS = (
     "/login/",
     "/logout/",
+    "/conta-bloqueada/",
     "/admin/",
     "/gestao/",
     "/static/",
@@ -52,12 +53,17 @@ class CanilMiddleware:
 class SenhaTemporariaMiddleware:
     """Obriga a troca da senha definida na criação/redefinição antes de
     acessar qualquer outra parte do sistema (superusuários não têm vínculo
-    e nunca são afetados)."""
+    e nunca são afetados).
+
+    Prazo de 7 dias (canis.senhas.PRAZO_TROCA_SENHA_DIAS): vencido o prazo
+    sem troca, o acesso é bloqueado e o usuário cai na página de conta
+    bloqueada, devendo falar com o desenvolvedor."""
 
     ROTAS_ISENTAS = (
         "/login/",
         "/logout/",
         "/trocar-senha/",
+        "/conta-bloqueada/",
         "/static/",
         "/media/",
     )
@@ -72,6 +78,10 @@ class SenhaTemporariaMiddleware:
         if request.user.is_authenticated:
             vinculo = getattr(request.user, "vinculo_canil", None)
             if vinculo is not None and vinculo.senha_temporaria:
+                from .senhas import senha_temporaria_expirada
+
+                if senha_temporaria_expirada(vinculo):
+                    return redirect("conta_bloqueada")
                 return redirect("trocar_senha_obrigatoria")
 
         return self.get_response(request)

@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import user_passes_test
 from django.contrib.auth.models import User
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
 
 from canis.models import Canil, Unidade, VinculoUsuario
 from canis.senhas import SENHA_PADRAO, gerar_senha_aleatoria
@@ -170,7 +171,8 @@ def usuario_form_view(request, pk=None):
                     username=dados["username"], password=senha, first_name=dados["first_name"])
                 VinculoUsuario.objects.create(
                     usuario=usuario, canil=canil, papel=dados["papel"],
-                    ativo=dados["ativo"], senha_temporaria=True)
+                    ativo=dados["ativo"], senha_temporaria=True,
+                    senha_temporaria_em=timezone.now())
                 return render(request, "gestaocanis/usuario_credenciais.html", {
                     "usuario": usuario, "canil": canil, "senha": senha, "novo": True,
                 })
@@ -180,6 +182,7 @@ def usuario_form_view(request, pk=None):
                 if senha:
                     usuario.set_password(senha)
                     vinculo.senha_temporaria = True
+                    vinculo.senha_temporaria_em = timezone.now()
                 usuario.save()
                 vinculo.canil = canil
                 vinculo.papel = dados["papel"]
@@ -211,6 +214,7 @@ def usuario_resetar_senha(request, pk):
         vinculo.usuario.set_password(senha)
         vinculo.usuario.save()
         vinculo.senha_temporaria = True
+        vinculo.senha_temporaria_em = timezone.now()
         vinculo.save()
         return render(request, "gestaocanis/usuario_credenciais.html", {
             "usuario": vinculo.usuario, "canil": vinculo.canil, "senha": senha, "novo": False,

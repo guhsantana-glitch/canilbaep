@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Conta bloqueada — Canil 10° BAEP{% endblock %}
+{% block content %}
+<style>
+.bloqueio-fundo{max-width:460px;margin:2.5rem auto;text-align:center;}
+.popup-overlay{
+  position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;
+  background:rgba(13,58,92,.55);backdrop-filter:blur(3px);padding:1rem;
+  animation:aparecer .25s ease;
+}
+@keyframes aparecer{from{opacity:0;}to{opacity:1;}}
+.popup-caixa{
+  background:#fff;border-radius:18px;max-width:420px;width:100%;
+  padding:1.8rem 1.6rem 1.6rem;text-align:center;
+  box-shadow:0 24px 60px rgba(0,0,0,.35);
+  animation:subir .3s ease;border-top:6px solid var(--alerta);
+}
+@keyframes subir{from{opacity:0;transform:translateY(16px) scale(.98);}to{opacity:1;transform:none;}}
+.popup-caixa .cadeado{font-size:2.6rem;}
+.popup-caixa h2{margin:.4rem 0 .5rem;font-size:1.25rem;color:var(--alerta);border:none;padding:0;display:block;}
+.popup-caixa p{font-size:.9rem;color:var(--texto);margin:.4rem 0;}
+.popup-caixa .destaque{background:#f9e4e2;border:1px solid #efc5c1;border-radius:10px;padding:.6rem .8rem;font-size:.85rem;margin:.8rem 0;}
+</style>
+
+<div class="bloqueio-fundo">
+  <div class="card">
+    <span class="eyebrow">Acesso bloqueado</span>
+    <h1>Conta bloqueada</h1>
+    <p style="color:#666;font-size:0.9rem;">O prazo de 7 dias para trocar a senha inicial venceu sem a troca.</p>
+    <a href="{% url 'login' %}" class="btn btn-secundario">Voltar ao login</a>
+  </div>
+</div>
+
+<div class="popup-overlay" id="popupBloqueio">
+  <div class="popup-caixa" role="alertdialog" aria-modal="true" aria-labelledby="tituloBloqueio">
+    <div class="cadeado">🔒</div>
+    <h2 id="tituloBloqueio">Acesso bloqueado</h2>
+    <p>Você não trocou a senha inicial dentro do <b>prazo de 7 dias</b>.</p>
+    <div class="destaque">Entre em contato com o <b>desenvolvedor</b> para desbloquear seu acesso.</div>
+    <a href="{% url 'login' %}" class="btn" style="width:100%;">Entendi, voltar ao login</a>
+  </div>
+</div>
+<script>
+(function () {
+  var overlay = document.getElementById('popupBloqueio');
+  if (!overlay) return;
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) { window.location.href = "{% url 'login' %}"; }
+  });
+})();
+</script>
+{% endblock %}

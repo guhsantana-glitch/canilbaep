@@ -5,6 +5,15 @@
   <span class="eyebrow">Primeiro acesso</span>
   <h1>Defina sua senha</h1>
   <p style="color:#666;font-size:0.88rem;">Por segurança, você precisa trocar a senha inicial antes de usar o sistema.</p>
+  {% if tem_prazo %}
+  <div class="msg msg-warning" style="margin-bottom:1rem;">
+    ⏳ Você tem <b>{{ prazo_dias }} dias</b> para trocar a senha inicial
+    {% if limite %}(até <b>{{ limite|date:"d/m/Y" }}</b>){% endif %}.
+    {% if dias_restantes <= 2 %}Restam <b>{{ dias_restantes }} dia(s)</b> — não deixe vencer!
+    {% else %}Restam <b>{{ dias_restantes }} dia(s)</b>.{% endif %}
+    Após o prazo, o acesso é <b>bloqueado</b> e será preciso falar com o desenvolvedor.
+  </div>
+  {% endif %}
   <form method="post">
     {% csrf_token %}
     <div class="form-linha">

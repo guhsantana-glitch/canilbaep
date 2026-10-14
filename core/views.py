@@ -45,8 +45,26 @@ def eh_superusuario(user):
 
 @login_required
 def trocar_senha_obrigatoria(request):
-    """Primeiro acesso: o usuário define sua senha definitiva."""
+    """Primeiro acesso: o usuário define sua senha definitiva.
+
+    Prazo de 7 dias a partir da emissão: vencido o prazo, a troca por
+    aqui é bloqueada e o usuário deve falar com o desenvolvedor."""
+    from canis.senhas import (
+        PRAZO_TROCA_SENHA_DIAS, dias_restantes_senha,
+        limite_troca_senha, senha_temporaria_expirada,
+    )
+
     vinculo = getattr(request.user, "vinculo_canil", None)
+    if vinculo is not None and vinculo.senha_temporaria and senha_temporaria_expirada(vinculo):
+        return redirect("conta_bloqueada")
+    limite = limite_troca_senha(vinculo) if vinculo is not None else None
+    dias_restantes = dias_restantes_senha(vinculo) if vinculo is not None else 0
+    contexto = {
+        "prazo_dias": PRAZO_TROCA_SENHA_DIAS,
+        "limite": limite,
+        "dias_restantes": dias_restantes,
+        "tem_prazo": bool(vinculo is not None and vinculo.senha_temporaria),
+    }
     if request.method == "POST":
         from django.contrib.auth.password_validation import validate_password
         from django.core.exceptions import ValidationError as ValidacaoErro
@@ -64,7 +82,7 @@ def trocar_senha_obrigatoria(request):
             except ValidacaoErro as erros:
                 for erro in erros.messages:
                     messages.error(request, erro)
-                return render(request, "core/trocar_senha.html")
+                return render(request, "core/trocar_senha.html", contexto)
             request.user.set_password(nova_senha)
             request.user.save()
             if vinculo is not None:
@@ -73,7 +91,19 @@ def trocar_senha_obrigatoria(request):
             update_session_auth_hash(request, request.user)
             messages.success(request, "Senha alterada com sucesso! Bem-vindo ao sistema.")
             return redirect("lista_caes")
-    return render(request, "core/trocar_senha.html")
+    return render(request, "core/trocar_senha.html", contexto)
+
+
+def conta_bloqueada(request):
+    """Conta bloqueada por não trocar a senha temporária em 7 dias.
+
+    Encerra a sessão (se houver) e exibe popup pedindo contato com o
+    desenvolvedor. Rota isenta dos middlewares de canil/senha."""
+    from django.contrib.auth import logout
+
+    if request.user.is_authenticated:
+        logout(request)
+    return render(request, "core/conta_bloqueada.html")
 
 
 def exigir_canil(view):
