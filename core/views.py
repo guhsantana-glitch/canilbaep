@@ -332,9 +332,13 @@ def visita_tecnica_excluir(request, cao_pk, pk):
 
 @exigir_canil
 def lista_ocorrencias(request):
-    import calendar
     from datetime import date
     from django.db.models import Sum, Count
+
+    MESES_PT = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+    ]
 
     canil = request.canil_escopo
     ocorrencias = (
@@ -408,7 +412,7 @@ def lista_ocorrencias(request):
         for d in drogas_qs
     ]
     anos_disponiveis = list(range(hoje.year - 5, hoje.year + 2))
-    meses = [(i, calendar.month_name[i].capitalize()) for i in range(1, 13)]
+    meses = [(i, MESES_PT[i - 1]) for i in range(1, 13)]
 
     return render(request, "core/lista_ocorrencias.html", {
         "ocorrencias": ocorrencias[:200],

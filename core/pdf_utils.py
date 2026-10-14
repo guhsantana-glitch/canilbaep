@@ -487,8 +487,12 @@ def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, tota
     - `por_tipo`: dict {F01: n, J09: n, G01: n}
     - `drogas`: lista de dicts {droga_tipo, droga_unidade, total_qtd}
     """
-    import calendar
     from datetime import date
+
+    MESES_PT = [
+        "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+        "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
+    ]
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
@@ -518,12 +522,7 @@ def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, tota
     rodape = ParagraphStyle("Prod_Rod", parent=styles["Normal"], fontSize=7, leading=9,
                             alignment=TA_CENTER, textColor=colors.HexColor("#888888"))
 
-    nome_mes = calendar.month_name[mes].capitalize()
-    try:
-        import locale
-        _ = locale.getlocale()
-    except Exception:
-        pass
+    nome_mes = MESES_PT[mes - 1] if 1 <= mes <= 12 else str(mes)
 
     story = []
     _cabecalho_com_logo(story)
