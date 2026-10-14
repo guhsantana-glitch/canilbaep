@@ -17,4 +17,5 @@ urlpatterns = [
     path("usuarios/<int:pk>/editar/", views.usuario_form_view, name="gestao_usuario_editar"),
     path("usuarios/<int:pk>/excluir/", views.usuario_excluir, name="gestao_usuario_excluir"),
     path("usuarios/<int:pk>/senha/", views.usuario_resetar_senha, name="gestao_usuario_senha"),
+    path("manutencao/atualizar-banco/", views.atualizar_banco, name="gestao_atualizar_banco"),
 ]

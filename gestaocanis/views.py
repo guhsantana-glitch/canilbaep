@@ -216,3 +216,23 @@ def usuario_resetar_senha(request, pk):
             "usuario": vinculo.usuario, "canil": vinculo.canil, "senha": senha, "novo": False,
         })
     return render(request, "gestaocanis/usuario_senha.html", {"vinculo": vinculo})
+
+
+@gestor_required
+def atualizar_banco(request):
+    """Roda as migrations pelo navegador (plano free do Render não tem Shell).
+
+    Uso: entre como superusuário e acesse /gestao/manutencao/atualizar-banco/
+    Pode remover esta rota quando o migrate passar a rodar no deploy.
+    """
+    from django.core.management import call_command
+    from django.http import HttpResponse
+    from io import StringIO
+
+    saida = StringIO()
+    try:
+        call_command("migrate", "--no-input", stdout=saida)
+        texto = saida.getvalue() or "Migrations aplicadas."
+        return HttpResponse(f"<h1>Banco atualizado</h1><pre>{texto}</pre><p><a href='/'>Voltar ao sistema</a></p>")
+    except Exception as exc:  # noqa: BLE001
+        return HttpResponse(f"<h1>Falha ao migrar</h1><pre>{exc}</pre>", status=500)
