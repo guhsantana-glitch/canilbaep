@@ -377,6 +377,10 @@ class OcorrenciaPolicial(models.Model):
     data = models.DateField("Data da ocorrência")
     tipo = models.CharField("Tipo de ocorrência", max_length=3, choices=Tipo.choices)
     numero_bo = models.CharField("Nº do BO / RDO", max_length=40, blank=True)
+    prefixo_viatura = models.CharField(
+        "Prefixo da viatura", max_length=20, blank=True,
+        help_text="Ex: B-10123, K9-04",
+    )
     local = models.CharField("Local da ocorrência", max_length=200, blank=True)
     condutor = models.ForeignKey(
         Condutor, on_delete=models.SET_NULL, null=True, blank=True,

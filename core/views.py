@@ -22,7 +22,7 @@ from .forms import (
     VeterinarioForm, TipoVacinaForm, VermifugacaoForm, EctoparasitaForm,
     OcorrenciaSaudeForm, VisitaTecnicaForm, OcorrenciaPolicialForm,
 )
-from .pdf_utils import gerar_ficha_box, gerar_relatorio_mensal, gerar_relatorio_geral_mensal, gerar_ficha_sanitaria
+from .pdf_utils import gerar_ficha_box, gerar_relatorio_mensal, gerar_relatorio_geral_mensal, gerar_ficha_sanitaria, gerar_produtividade_mensal
 
 
 class CanilLoginView(LoginView):
@@ -332,6 +332,10 @@ def visita_tecnica_excluir(request, cao_pk, pk):
 
 @exigir_canil
 def lista_ocorrencias(request):
+    import calendar
+    from datetime import date
+    from django.db.models import Sum, Count
+
     canil = request.canil_escopo
     ocorrencias = (
         OcorrenciaPolicial.objects
@@ -347,20 +351,126 @@ def lista_ocorrencias(request):
             Q(cao__nome__icontains=busca)
             | Q(numero_bo__icontains=busca)
             | Q(local__icontains=busca)
+            | Q(prefixo_viatura__icontains=busca)
         )
     # Totais do filtro atual (para o cabeçalho da página)
-    from django.db.models import Sum
     totais = ocorrencias.aggregate(
         total_armas=Sum("qtd_armas"),
         total_procurados=Sum("qtd_procurados"),
     )
+
+    # ---------- Produtividade mensal (filtro por cão + mês) ----------
+    hoje = date.today()
+    try:
+        mes = int(request.GET.get("mes", hoje.month))
+        ano = int(request.GET.get("ano", hoje.year))
+    except (TypeError, ValueError):
+        mes, ano = hoje.month, hoje.year
+    if mes < 1 or mes > 12:
+        mes = hoje.month
+    cao_id = request.GET.get("cao", "").strip()
+    prod_qs = OcorrenciaPolicial.objects.select_related("cao", "condutor").filter(
+        cao__canil=canil, data__year=ano, data__month=mes,
+    )
+    cao_prod = None
+    if cao_id:
+        try:
+            cao_prod = Cao.objects.get(pk=int(cao_id), canil=canil)
+            prod_qs = prod_qs.filter(cao=cao_prod)
+        except (ValueError, Cao.DoesNotExist):
+            cao_id = ""
+    prod_qs = prod_qs.order_by("data", "id")
+    prod_totais_qs = prod_qs.aggregate(
+        total_armas=Sum("qtd_armas"), total_procurados=Sum("qtd_procurados"),
+    )
+    prod_totais = {
+        "total_ocorrencias": prod_qs.count(),
+        "total_armas": prod_totais_qs["total_armas"] or 0,
+        "total_procurados": prod_totais_qs["total_procurados"] or 0,
+    }
+    por_tipo_qs = prod_qs.values("tipo").annotate(n=Count("id"))
+    por_tipo = {"F01": 0, "J09": 0, "G01": 0}
+    for linha in por_tipo_qs:
+        por_tipo[linha["tipo"]] = linha["n"]
+    drogas_qs = (
+        prod_qs.exclude(droga_tipo="NA").exclude(droga_quantidade__isnull=True)
+        .values("droga_tipo", "droga_unidade").annotate(total_qtd=Sum("droga_quantidade"))
+        .order_by("droga_tipo")
+    )
+    drogas = [
+        {
+            "droga_tipo": d["droga_tipo"],
+            "droga_tipo_display": dict(OcorrenciaPolicial.DrogaTipo.choices).get(d["droga_tipo"], d["droga_tipo"]),
+            "droga_unidade": d["droga_unidade"],
+            "droga_unidade_display": dict(OcorrenciaPolicial.DrogaUnidade.choices).get(d["droga_unidade"], d["droga_unidade"]),
+            "total_qtd": d["total_qtd"],
+        }
+        for d in drogas_qs
+    ]
+    anos_disponiveis = list(range(hoje.year - 5, hoje.year + 2))
+    meses = [(i, calendar.month_name[i].capitalize()) for i in range(1, 13)]
+
     return render(request, "core/lista_ocorrencias.html", {
         "ocorrencias": ocorrencias[:200],
         "tipo_choices": OcorrenciaPolicial.Tipo.choices,
         "tipo_selecionado": tipo or "",
         "busca": busca,
         "totais": totais,
+        # produtividade
+        "caes": Cao.objects.filter(canil=canil).order_by("nome"),
+        "mes": mes, "ano": ano, "meses": meses, "anos_disponiveis": anos_disponiveis,
+        "cao_prod_id": cao_id, "cao_prod": cao_prod,
+        "prod_ocorrencias": prod_qs[:200],
+        "prod_totais": prod_totais, "prod_por_tipo": por_tipo, "prod_drogas": drogas,
     })
+
+
+@exigir_canil
+def produtividade_mensal_pdf(request):
+    from datetime import date
+    from django.db.models import Sum, Count
+
+    canil = request.canil_escopo
+    hoje = date.today()
+    try:
+        mes = int(request.GET.get("mes", hoje.month))
+        ano = int(request.GET.get("ano", hoje.year))
+    except (TypeError, ValueError):
+        mes, ano = hoje.month, hoje.year
+    cao_id = request.GET.get("cao", "").strip()
+    qs = OcorrenciaPolicial.objects.select_related("cao", "condutor").filter(
+        cao__canil=canil, data__year=ano, data__month=mes,
+    )
+    cao_nome = "Todos os cães"
+    if cao_id:
+        cao_obj = get_object_or_404(Cao, pk=cao_id, canil=canil)
+        qs = qs.filter(cao=cao_obj)
+        cao_nome = cao_obj.nome
+    qs = qs.order_by("data", "id")
+    agg = qs.aggregate(total_armas=Sum("qtd_armas"), total_procurados=Sum("qtd_procurados"))
+    totais = {"total_ocorrencias": qs.count(), "total_armas": agg["total_armas"] or 0,
+              "total_procurados": agg["total_procurados"] or 0}
+    por_tipo = {"F01": 0, "J09": 0, "G01": 0}
+    for linha in qs.values("tipo").annotate(n=Count("id")):
+        por_tipo[linha["tipo"]] = linha["n"]
+    drogas = [
+        {
+            "droga_tipo": d["droga_tipo"],
+            "droga_tipo_display": dict(OcorrenciaPolicial.DrogaTipo.choices).get(d["droga_tipo"], d["droga_tipo"]),
+            "droga_unidade": d["droga_unidade"],
+            "droga_unidade_display": dict(OcorrenciaPolicial.DrogaUnidade.choices).get(d["droga_unidade"], d["droga_unidade"]),
+            "total_qtd": d["total_qtd"],
+        }
+        for d in qs.exclude(droga_tipo="NA").exclude(droga_quantidade__isnull=True)
+        .values("droga_tipo", "droga_unidade").annotate(total_qtd=Sum("droga_quantidade")).order_by("droga_tipo")
+    ]
+    buffer = gerar_produtividade_mensal(
+        canil.nome if hasattr(canil, "nome") else str(canil),
+        mes, ano, cao_nome, list(qs), totais, por_tipo, drogas,
+    )
+    resp = HttpResponse(buffer, content_type="application/pdf")
+    resp["Content-Disposition"] = f'inline; filename="produtividade_{ano}_{mes:02d}.pdf"'
+    return resp
 
 
 @exigir_canil

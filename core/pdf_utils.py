@@ -478,3 +478,175 @@ def gerar_ficha_sanitaria(cao):
     doc.build(story)
     buffer.seek(0)
     return buffer
+
+
+def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, totais, por_tipo, drogas):
+    """Relatório premium de produtividade mensal das ocorrências K-9 (A4).
+
+    - `totais`: dict com total_ocorrencias, total_armas, total_procurados
+    - `por_tipo`: dict {F01: n, J09: n, G01: n}
+    - `drogas`: lista de dicts {droga_tipo, droga_unidade, total_qtd}
+    """
+    import calendar
+    from datetime import date
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        topMargin=1.4 * cm, bottomMargin=1.4 * cm,
+        leftMargin=1.5 * cm, rightMargin=1.5 * cm,
+        title=f"Produtividade {mes:02d}/{ano}",
+    )
+    styles = getSampleStyleSheet()
+    AZUL = colors.HexColor("#0d3a5c")
+    CIANO = colors.HexColor("#2f8fc4")
+    CINZA_BG = colors.HexColor("#eef3f7")
+
+    titulo = ParagraphStyle("Prod_Titulo", parent=styles["Title"], fontSize=16, leading=19,
+                            textColor=AZUL, alignment=TA_CENTER, spaceAfter=2)
+    subtitulo = ParagraphStyle("Prod_Sub", parent=styles["Normal"], fontSize=10, leading=13,
+                               alignment=TA_CENTER, textColor=colors.HexColor("#3d5a6c"))
+    kpi_num = ParagraphStyle("Prod_KPI_Num", parent=styles["Normal"], fontSize=18, leading=20,
+                             alignment=TA_CENTER, textColor=colors.white)
+    kpi_rot = ParagraphStyle("Prod_KPI_Rot", parent=styles["Normal"], fontSize=8, leading=10,
+                             alignment=TA_CENTER, textColor=colors.white)
+    secao = ParagraphStyle("Prod_Secao", parent=styles["Heading2"], fontSize=11, leading=14,
+                           textColor=AZUL, spaceBefore=12, spaceAfter=6)
+    cel = ParagraphStyle("Prod_Cel", parent=styles["Normal"], fontSize=8.5, leading=11)
+    cel_c = ParagraphStyle("Prod_CelC", parent=cel, alignment=TA_CENTER)
+    cab = ParagraphStyle("Prod_Cab", parent=cel, textColor=colors.white, alignment=TA_CENTER)
+    rodape = ParagraphStyle("Prod_Rod", parent=styles["Normal"], fontSize=7, leading=9,
+                            alignment=TA_CENTER, textColor=colors.HexColor("#888888"))
+
+    nome_mes = calendar.month_name[mes].capitalize()
+    try:
+        import locale
+        _ = locale.getlocale()
+    except Exception:
+        pass
+
+    story = []
+    _cabecalho_com_logo(story)
+    story.append(Paragraph("POLÍCIA MILITAR DO ESTADO DE SÃO PAULO &nbsp;•&nbsp; 10º BAEP &nbsp;•&nbsp; CANIL K-9", subtitulo))
+    story.append(Spacer(1, 4))
+    story.append(Paragraph("PRODUTIVIDADE MENSAL — EMPREGO DE CÃES", titulo))
+    story.append(Paragraph(
+        f"{canil_nome} &nbsp;•&nbsp; {nome_mes}/{ano} &nbsp;•&nbsp; Cão: <b>{cao_nome}</b>",
+        subtitulo,
+    ))
+    story.append(Spacer(1, 10))
+
+    # Faixa de KPIs
+    def kpi(numero, rotulo):
+        return [Paragraph(f"<b>{numero}</b>", kpi_num), Paragraph(rotulo.upper(), kpi_rot)]
+
+    kpis = [[
+        kpi(totais.get("total_ocorrencias", 0), "ocorrências"),
+        kpi(por_tipo.get("F01", 0), "F01 tráfico"),
+        kpi(por_tipo.get("J09", 0), "J09 arma"),
+        kpi(por_tipo.get("G01", 0), "G01 procurado"),
+    ], [
+        kpi(totais.get("total_armas", 0) or 0, "armas"),
+        kpi(totais.get("total_procurados", 0) or 0, "procurados"),
+        kpi(len(drogas), "tipos droga"),
+        kpi(totais.get("total_ocorrencias", 0), "lançamentos"),
+    ]]
+    # Simplifica: primeira linha com 4 KPIs principais
+    faixa = Table([[
+        Paragraph(f"<b>{totais.get('total_ocorrencias', 0)}</b>", kpi_num),
+        Paragraph(f"<b>{por_tipo.get('F01', 0)}</b>", kpi_num),
+        Paragraph(f"<b>{por_tipo.get('J09', 0)}</b>", kpi_num),
+        Paragraph(f"<b>{por_tipo.get('G01', 0)}</b>", kpi_num),
+    ], [
+        Paragraph("OCORRÊNCIAS", kpi_rot), Paragraph("F01 TRÁFICO", kpi_rot),
+        Paragraph("J09 ARMA", kpi_rot), Paragraph("G01 PROCURADO", kpi_rot),
+    ], [
+        Paragraph(f"<b>{totais.get('total_armas', 0) or 0}</b>", kpi_num),
+        Paragraph(f"<b>{totais.get('total_procurados', 0) or 0}</b>", kpi_num),
+        Paragraph(f"<b>{len(drogas)}</b>", kpi_num),
+        Paragraph(f"<b>{totais.get('total_ocorrencias', 0)}</b>", kpi_num),
+    ], [
+        Paragraph("ARMAS APREEND.", kpi_rot), Paragraph("PROCURADOS", kpi_rot),
+        Paragraph("TIPOS DROGA", kpi_rot), Paragraph("LANÇAMENTOS", kpi_rot),
+    ]], colWidths=[4.2 * cm] * 4)
+    faixa.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), AZUL),
+        ("ROUNDEDCORNERS", [6, 6, 6, 6]),
+        ("TOPPADDING", (0, 0), (-1, -1), 6),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("LINEBELOW", (0, 1), (-1, 1), 0.5, colors.HexColor("#ffffff55")),
+    ]))
+    story.append(faixa)
+    story.append(Spacer(1, 6))
+
+    def tabela_padrao(cabecalho, linhas, larguras):
+        dados = [[Paragraph(f"<b>{c}</b>", cab) for c in cabecalho]]
+        for linha in linhas:
+            dados.append([Paragraph(str(v), cel_c if i > 0 else cel) for i, v in enumerate(linha)])
+        t = Table(dados, colWidths=larguras, repeatRows=1)
+        t.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, 0), CIANO),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#d5dde5")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, CINZA_BG]),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("TOPPADDING", (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ]))
+        return t
+
+    # Drogas apreendidas
+    story.append(Paragraph("Drogas apreendidas no mês", secao))
+    if drogas:
+        story.append(tabela_padrao(
+            ["Tipo de droga", "Quantidade", "Unidade"],
+            [[d["droga_tipo_display"], str(d["total_qtd"]).replace(".", ","), d["droga_unidade_display"]] for d in drogas],
+            [7 * cm, 5 * cm, 5 * cm],
+        ))
+    else:
+        story.append(Paragraph("Sem apreensão de drogas no período.", styles["Normal"]))
+
+    # Detalhamento das ocorrências
+    story.append(Paragraph("Detalhamento das ocorrências", secao))
+    if ocorrencias:
+        linhas = []
+        for o in ocorrencias:
+            detalhe = []
+            if o.droga_tipo != "NA" and o.droga_quantidade:
+                detalhe.append(f"{o.get_droga_tipo_display()}: {str(o.droga_quantidade).replace('.', ',')} {o.get_droga_unidade_display()}")
+            if o.qtd_armas:
+                detalhe.append(f"{o.qtd_armas} arma(s){' — ' + o.descricao_armas if o.descricao_armas else ''}")
+            if o.qtd_procurados:
+                detalhe.append(f"{o.qtd_procurados} procurado(s)")
+            linhas.append([
+                o.data.strftime("%d/%m"),
+                o.cao.nome,
+                o.get_tipo_display().split(" — ")[0],
+                o.prefixo_viatura or "-",
+                o.numero_bo or "-",
+                " · ".join(detalhe) if detalhe else "-",
+            ])
+        story.append(tabela_padrao(
+            ["Data", "Cão", "Tipo", "Vtr", "BO", "Apreensões"],
+            linhas,
+            [1.8 * cm, 2.8 * cm, 1.8 * cm, 2.0 * cm, 2.8 * cm, 5.8 * cm],
+        ))
+    else:
+        story.append(Paragraph("Sem ocorrências lançadas para o filtro selecionado.", styles["Normal"]))
+
+    story.append(Spacer(1, 18))
+    story.append(Paragraph(
+        f"Emitido em {date.today().strftime('%d/%m/%Y')} pelo Sistema de Gestão do Canil &nbsp;•&nbsp; {canil_nome}",
+        rodape,
+    ))
+    story.append(Spacer(1, 22))
+    story.append(Table([
+        [Paragraph("___________________________", cel_c), Paragraph("___________________________", cel_c)],
+        [Paragraph("Comandante do Canil", cel_c), Paragraph("Responsável pela produtividade", cel_c)],
+    ], colWidths=[8.5 * cm, 8.5 * cm]))
+
+    doc.build(story)
+    buffer.seek(0)
+    return buffer

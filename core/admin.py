@@ -141,6 +141,6 @@ class TipoVacinaAdmin(admin.ModelAdmin):
 
 @admin.register(OcorrenciaPolicial)
 class OcorrenciaPolicialAdmin(admin.ModelAdmin):
-    list_display = ("data", "tipo", "cao", "droga_tipo", "droga_quantidade", "qtd_armas", "qtd_procurados")
+    list_display = ("data", "tipo", "cao", "prefixo_viatura", "droga_tipo", "droga_quantidade", "qtd_armas", "qtd_procurados")
     list_filter = ("tipo", "droga_tipo")
-    search_fields = ("cao__nome", "numero_bo", "local")
+    search_fields = ("cao__nome", "numero_bo", "local", "prefixo_viatura")

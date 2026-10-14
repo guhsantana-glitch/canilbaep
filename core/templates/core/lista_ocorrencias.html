@@ -10,6 +10,62 @@
   <div style="margin-left:auto;"><a href="{% url 'ocorrencia_nova' %}" class="btn">+ Nova ocorrência</a></div>
 </div>
 
+<div class="card">
+  <div style="display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-bottom:.8rem;">
+    <div style="font-weight:700;color:var(--azul-escuro);">📊 Produtividade mensal</div>
+    <span class="pill pill-cinza">{{ prod_totais.total_ocorrencias }} ocorrência(s)</span>
+    <span class="pill pill-verde">F01 {{ prod_por_tipo.F01 }}</span>
+    <span class="pill pill-verde">J09 {{ prod_por_tipo.J09 }}</span>
+    <span class="pill pill-verde">G01 {{ prod_por_tipo.G01 }}</span>
+    <span class="pill pill-cinza">{{ prod_totais.total_armas }} arma(s) · {{ prod_totais.total_procurados }} procurado(s)</span>
+  </div>
+  <form method="get" class="filtro-barra" style="margin-bottom:.6rem;">
+    <input type="hidden" name="tipo" value="{{ tipo_selecionado }}">
+    {% if busca %}<input type="hidden" name="q" value="{{ busca }}">{% endif %}
+    <div class="form-linha" style="margin:0;min-width:130px;">
+      <label>Mês</label>
+      <select name="mes" onchange="this.form.submit()">
+        {% for v, rot in meses %}
+        <option value="{{ v }}" {% if mes == v %}selected{% endif %}>{{ rot }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-linha" style="margin:0;min-width:110px;">
+      <label>Ano</label>
+      <select name="ano" onchange="this.form.submit()">
+        {% for a in anos_disponiveis %}
+        <option value="{{ a }}" {% if ano == a %}selected{% endif %}>{{ a }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="form-linha" style="margin:0;flex:1;min-width:180px;">
+      <label>Cão</label>
+      <select name="cao" onchange="this.form.submit()">
+        <option value="">Todos os cães (total do mês)</option>
+        {% for c in caes %}
+        <option value="{{ c.pk }}" {% if cao_prod_id == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <a class="btn" target="_blank" href="{% url 'produtividade_pdf' %}?mes={{ mes }}&ano={{ ano }}{% if cao_prod_id %}&cao={{ cao_prod_id }}{% endif %}">Gerar PDF premium</a>
+  </form>
+  {% if prod_drogas %}
+  <div style="font-size:.85rem;color:var(--texto-suave);margin-bottom:.4rem;"><b>Drogas no mês:</b>
+    {% for d in prod_drogas %}{{ d.droga_tipo_display }} {{ d.total_qtd }} {{ d.droga_unidade_display }}{% if not forloop.last %} · {% endif %}{% endfor %}
+  </div>
+  {% endif %}
+  <div class="lista-registros">
+    {% for o in prod_ocorrencias %}
+    <div class="registro">
+      <div class="principal">
+        <div class="titulo">{{ o.data|date:"d/m/Y" }} · {{ o.cao.nome }} · {{ o.get_tipo_display }}{% if o.prefixo_viatura %} · Vtr {{ o.prefixo_viatura }}{% endif %}{% if o.numero_bo %} · {{ o.numero_bo }}{% endif %}</div>
+        {% if o.resumo_apreensao != "-" %}<div class="meta">{{ o.resumo_apreensao }}{% if o.descricao_armas %} — {{ o.descricao_armas }}{% endif %}</div>{% endif %}
+      </div>
+    </div>
+    {% empty %}<div class="vazio">Sem ocorrências neste mês para o filtro selecionado.</div>{% endfor %}
+  </div>
+</div>
+
 <form method="get" class="filtro-barra">
   <div class="form-linha" style="margin:0;min-width:160px;">
     <label>Tipo</label>
@@ -21,9 +77,12 @@
     </select>
   </div>
   <div class="form-linha" style="margin:0;flex:1;min-width:200px;">
-    <label>Buscar (cão, BO, local)</label>
-    <input type="text" name="q" value="{{ busca }}" placeholder="Ex: Thor, BO 123, bairro...">
+    <label>Buscar (cão, BO, local, viatura)</label>
+    <input type="text" name="q" value="{{ busca }}" placeholder="Ex: Thor, BO 123, B-10123...">
   </div>
+  <input type="hidden" name="mes" value="{{ mes }}">
+  <input type="hidden" name="ano" value="{{ ano }}">
+  {% if cao_prod_id %}<input type="hidden" name="cao" value="{{ cao_prod_id }}">{% endif %}
   <button class="btn btn-secundario" type="submit">Filtrar</button>
   {% if tipo_selecionado or busca %}<a href="{% url 'lista_ocorrencias' %}" class="btn btn-secundario">Limpar</a>{% endif %}
 </form>
@@ -36,6 +95,7 @@
         <a href="{% url 'ficha_cao' o.cao.pk %}" style="color:inherit;">{{ o.cao.nome }}</a>
         · {{ o.get_tipo_display }}
         {% if o.numero_bo %} · {{ o.numero_bo }}{% endif %}
+        {% if o.prefixo_viatura %} · Vtr {{ o.prefixo_viatura }}{% endif %}
       </div>
       <div class="meta">{{ o.data|date:"d/m/Y" }}{% if o.local %} · {{ o.local }}{% endif %}{% if o.condutor %} · {{ o.condutor.nome }}{% endif %}</div>
       {% if o.resumo_apreensao != "-" %}<div class="meta">{{ o.resumo_apreensao }}{% if o.descricao_armas %} — {{ o.descricao_armas }}{% endif %}</div>{% endif %}

@@ -222,7 +222,7 @@
       {% for o in ocorrencias_policiais %}
       <div class="registro">
         <div class="principal">
-          <div class="titulo">{{ o.get_tipo_display }}{% if o.numero_bo %} · {{ o.numero_bo }}{% endif %}</div>
+          <div class="titulo">{{ o.get_tipo_display }}{% if o.numero_bo %} · {{ o.numero_bo }}{% endif %}{% if o.prefixo_viatura %} · Vtr {{ o.prefixo_viatura }}{% endif %}</div>
           <div class="meta">{{ o.data|date:"d/m/Y" }}{% if o.local %} · {{ o.local }}{% endif %}{% if o.condutor %} · {{ o.condutor.nome }}{% endif %}</div>
           {% if o.resumo_apreensao != "-" %}<div class="meta">{{ o.resumo_apreensao }}{% if o.descricao_armas %} — {{ o.descricao_armas }}{% endif %}</div>{% endif %}
         </div>

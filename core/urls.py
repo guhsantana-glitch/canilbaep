@@ -51,6 +51,7 @@ urlpatterns = [
 
     path("ocorrencias/", views.lista_ocorrencias, name="lista_ocorrencias"),
     path("ocorrencias/nova/", views.ocorrencia_policial_form_view, name="ocorrencia_nova"),
+    path("ocorrencias/produtividade.pdf", views.produtividade_mensal_pdf, name="produtividade_pdf"),
     path("ocorrencias/<int:pk>/editar/", views.ocorrencia_policial_form_view, name="ocorrencia_editar"),
     path("ocorrencias/<int:pk>/excluir/", views.ocorrencia_policial_excluir, name="ocorrencia_excluir"),
     path("caes/<int:cao_pk>/ocorrencias/nova/", views.ocorrencia_policial_form_view, name="ocorrencia_cao_nova"),

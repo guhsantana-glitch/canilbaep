@@ -179,7 +179,7 @@ class OcorrenciaPolicialForm(forms.ModelForm):
     class Meta:
         model = OcorrenciaPolicial
         fields = [
-            "cao", "data", "tipo", "numero_bo", "local", "condutor",
+            "cao", "data", "tipo", "numero_bo", "prefixo_viatura", "local", "condutor",
             "droga_tipo", "droga_quantidade", "droga_unidade",
             "qtd_armas", "descricao_armas", "qtd_procurados", "observacoes",
         ]
@@ -188,6 +188,7 @@ class OcorrenciaPolicialForm(forms.ModelForm):
             "descricao_armas": forms.TextInput(attrs={"placeholder": "Ex: 1 pistola .40 + 2 revólveres .38"}),
             "local": forms.TextInput(attrs={"placeholder": "Ex: Rua X, bairro Y — Piracicaba/SP"}),
             "numero_bo": forms.TextInput(attrs={"placeholder": "Ex: BO 1234/2026"}),
+            "prefixo_viatura": forms.TextInput(attrs={"placeholder": "Ex: B-10123"}),
         }
 
 
