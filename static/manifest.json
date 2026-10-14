@@ -1,0 +1,32 @@
+{
+  "name": "Canil 10° BAEP — Gestão do Plantel",
+  "short_name": "Canil",
+  "description": "Sistema de gestão do canil do 10° BAEP: cães, saúde, treinamento e ocorrências.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f7fb",
+  "theme_color": "#0d3a5c",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

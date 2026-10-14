@@ -3,7 +3,15 @@
 <html lang="pt-br">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d3a5c">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Canil">
+<link rel="manifest" href="{% static 'manifest.json' %}">
+<link rel="icon" type="image/png" href="{% static 'icons/icon-192.png' %}">
+<link rel="apple-touch-icon" href="{% static 'icons/apple-touch-icon.png' %}">
 <title>{% block title %}Canil 10° BAEP{% endblock %}</title>
 <style>
 :root{
@@ -275,6 +283,25 @@ tbody tr:hover td{background:var(--azul-claro);}
 .tab-panel .panel-head h2{margin:0;border:none;padding:0;}
 footer{text-align:center;padding:1.4rem;color:#93a5b1;font-size:.78rem;border-top:1px solid var(--borda);margin-top:1rem;}
 .login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem;}
+/* ===== Banner de instalação do app (PWA) ===== */
+.install-banner{
+  position:fixed;left:50%;transform:translate(-50%,120%);bottom:calc(1rem + env(safe-area-inset-bottom));
+  z-index:200;display:flex;align-items:center;gap:.7rem;
+  background:rgba(13,58,92,.96);color:#fff;border:1px solid rgba(255,255,255,.25);
+  border-radius:14px;padding:.7rem .8rem;box-shadow:0 12px 32px rgba(13,58,92,.4);
+  max-width:min(92vw,420px);transition:transform .3s ease;
+  backdrop-filter:blur(8px);
+}
+.install-banner.visivel{transform:translate(-50%,0);}
+.install-banner img{width:40px;height:40px;border-radius:10px;flex-shrink:0;}
+.install-banner .txt{font-size:.82rem;line-height:1.35;}
+.install-banner .txt b{display:block;font-size:.88rem;}
+.install-banner .btn{padding:.45rem .8rem;font-size:.8rem;white-space:nowrap;}
+.install-banner .fechar{
+  background:none;border:none;color:rgba(255,255,255,.7);font-size:1.1rem;cursor:pointer;
+  padding:.2rem .4rem;border-radius:8px;transition:color .15s,background .15s;
+}
+.install-banner .fechar:hover{color:#fff;background:rgba(255,255,255,.12);}
 </style>
 </head>
 <body>
@@ -350,5 +377,69 @@ footer{text-align:center;padding:1.4rem;color:#93a5b1;font-size:.78rem;border-to
   </div>
 </div>
 {% endif %}
+<div class="install-banner" id="installBanner" hidden>
+  <img src="{% static 'icons/icon-192.png' %}" alt="Canil">
+  <div class="txt"><b>Instalar o app do Canil?</b><span id="installBannerSub">Acesso rápido na tela inicial, em tela cheia.</span></div>
+  <button class="btn" id="installBannerBtn">Instalar</button>
+  <button class="fechar" id="installBannerFechar" aria-label="Fechar">✕</button>
+</div>
+<script>
+(function () {
+  // Registra o Service Worker (PWA).
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("{% static 'sw.js' %}").catch(function () {});
+    });
+  }
+  var banner = document.getElementById("installBanner");
+  var btn = document.getElementById("installBannerBtn");
+  var fechar = document.getElementById("installBannerFechar");
+  var sub = document.getElementById("installBannerSub");
+  if (!banner) return;
+  function jaInstalado() {
+    return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  }
+  function dispensado() {
+    try { return localStorage.getItem("pwa-banner-dispensado") === "1"; } catch (e) { return true; }
+  }
+  function mostrar() {
+    if (jaInstalado() || dispensado()) return;
+    banner.hidden = false;
+    requestAnimationFrame(function () { banner.classList.add("visivel"); });
+  }
+  function esconder(permanente) {
+    banner.classList.remove("visivel");
+    setTimeout(function () { banner.hidden = true; }, 300);
+    if (permanente) { try { localStorage.setItem("pwa-banner-dispensado", "1"); } catch (e) {} }
+  }
+  if (fechar) fechar.addEventListener("click", function () { esconder(true); });
+  var deferred = null;
+  window.addEventListener("beforeinstallprompt", function (e) {
+    e.preventDefault();
+    deferred = e;
+    mostrar();
+  });
+  if (btn) btn.addEventListener("click", function () {
+    if (deferred) {
+      deferred.prompt();
+      deferred.userChoice.then(function () { deferred = null; esconder(true); });
+    } else {
+      esconder(false);
+    }
+  });
+  // iOS (sem beforeinstallprompt): sugere via Compartilhar > Adicionar à Tela de Início.
+  var ehIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (ehIOS && !jaInstalado() && !deferred) {
+    if (sub) sub.textContent = "No Safari: Compartilhar > Adicionar à Tela de Início.";
+    setTimeout(mostrar, 1500);
+  } else {
+    // Android/desktop sem captura em 3s: não força (evita banner inútil).
+    setTimeout(function () {
+      if (!deferred && !ehIOS) banner.hidden = true;
+    }, 3000);
+  }
+  window.addEventListener("appinstalled", function () { esconder(true); });
+})();
+</script>
 </body>
 </html>

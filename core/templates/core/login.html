@@ -3,44 +3,103 @@
 {% block title %}Entrar — Canil 10° BAEP{% endblock %}
 {% block content %}
 <style>
-.login-palco{max-width:440px;margin:2.5rem auto 1rem;}
-.login-card{background:#fff;border:1px solid var(--borda);border-radius:18px;box-shadow:var(--sombra-forte);overflow:hidden;}
-.login-topo{background:linear-gradient(135deg,var(--azul-profundo) 0%,var(--azul-escuro) 60%,#1c6ea1 100%);padding:2rem 1.8rem 1.6rem;text-align:center;color:#fff;position:relative;}
+.login-palco{max-width:440px;margin:2.5rem auto 1rem;position:relative;z-index:1;}
+/* Fundo premium animado (orbes em movimento) */
+.login-fundo{
+  position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none;
+  background:radial-gradient(1000px 420px at 50% -120px, #d8ecf8 0%, transparent 65%), var(--off-white);
+}
+.login-fundo .orbe{position:absolute;border-radius:50%;filter:blur(70px);opacity:.55;animation:flutuar 12s ease-in-out infinite alternate;}
+.login-fundo .o1{width:340px;height:340px;left:-90px;top:8%;background:#bfe0f4;}
+.login-fundo .o2{width:300px;height:300px;right:-80px;top:32%;background:#d7ecf7;animation-delay:-4s;}
+.login-fundo .o3{width:260px;height:260px;left:30%;bottom:-90px;background:#c3e3f5;animation-delay:-8s;}
+@keyframes flutuar{from{transform:translateY(-18px) scale(1);}to{transform:translateY(22px) scale(1.06);}}
+.login-card{
+  background:rgba(255,255,255,.92);backdrop-filter:blur(14px);
+  border:1px solid rgba(255,255,255,.7);outline:1px solid var(--borda);
+  border-radius:22px;box-shadow:0 24px 60px rgba(13,58,92,.22);
+  overflow:hidden;animation:subir .45s ease;
+}
+@keyframes subir{from{opacity:0;transform:translateY(14px) scale(.99);}to{opacity:1;transform:none;}}
+.login-topo{
+  background:linear-gradient(135deg,var(--azul-profundo) 0%,var(--azul-escuro) 60%,#1c6ea1 100%);
+  padding:2.2rem 1.8rem 1.7rem;text-align:center;color:#fff;position:relative;overflow:hidden;
+}
+.login-topo::before{
+  content:"";position:absolute;inset:-40%;pointer-events:none;
+  background:conic-gradient(from 180deg at 50% 50%, transparent 0deg, rgba(255,255,255,.14) 40deg, transparent 90deg);
+  animation:girar 9s linear infinite;
+}
+@keyframes girar{to{transform:rotate(360deg);}}
 .login-topo::after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:linear-gradient(90deg,transparent,var(--azul-medio),transparent);}
-.login-selo{width:84px;height:84px;border-radius:50%;margin:0 auto .9rem;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.45);display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25);}
+.login-selo{
+  width:92px;height:92px;border-radius:50%;margin:0 auto .9rem;position:relative;
+  background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.5);
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
+  box-shadow:0 0 0 6px rgba(255,255,255,.1), 0 8px 26px rgba(0,0,0,.3);
+  animation:pulsar 3s ease-in-out infinite;
+}
+@keyframes pulsar{0%,100%{box-shadow:0 0 0 6px rgba(255,255,255,.1),0 8px 26px rgba(0,0,0,.3);}50%{box-shadow:0 0 0 10px rgba(255,255,255,.14),0 8px 30px rgba(0,0,0,.35);}}
 .login-selo img{width:100%;height:100%;object-fit:cover;}
-.login-topo h1{color:#fff;font-size:1.5rem;margin:0;letter-spacing:.14em;}
-.login-topo p{margin:.35rem 0 0;font-size:.78rem;letter-spacing:.08em;color:rgba(255,255,255,.85);text-transform:uppercase;}
-.login-corpo{padding:1.6rem 1.8rem 1.8rem;}
-.login-corpo .form-linha input{padding:.7rem .8rem;}
-.login-erro{background:#f9e4e2;color:#8a3324;border:1px solid #efc5c1;border-radius:10px;padding:.6rem .9rem;font-size:.85rem;margin-bottom:1rem;text-align:center;}
-.login-btn{width:100%;padding:.75rem;font-size:.95rem;border-radius:10px;}
-.login-rodape{text-align:center;font-size:.75rem;color:#93a5b1;margin-top:1.1rem;letter-spacing:.04em;}
+.login-topo h1{color:#fff;font-size:1.55rem;margin:0;letter-spacing:.18em;position:relative;}
+.login-topo p{margin:.35rem 0 0;font-size:.76rem;letter-spacing:.12em;color:rgba(255,255,255,.88);text-transform:uppercase;position:relative;}
+.login-corpo{padding:1.7rem 1.8rem 1.9rem;}
+.login-corpo .form-linha{position:relative;}
+.login-corpo .form-linha input{
+  padding:.75rem .85rem .75rem 2.5rem;border-radius:12px;
+  transition:border-color .15s,box-shadow .15s,transform .15s;
+}
+.login-corpo .form-linha input:focus{transform:translateY(-1px);}
+.login-corpo .form-linha .icone{
+  position:absolute;left:.8rem;top:2.25rem;font-size:1rem;opacity:.55;pointer-events:none;
+}
+.login-erro{background:#f9e4e2;color:#8a3324;border:1px solid #efc5c1;border-radius:12px;padding:.6rem .9rem;font-size:.85rem;margin-bottom:1rem;text-align:center;animation:subir .3s ease;}
+/* Botão premium com brilho deslizante */
+.btn-premium{
+  width:100%;padding:.85rem;font-size:.98rem;border-radius:12px;position:relative;overflow:hidden;
+  background:linear-gradient(180deg,#2f8fc4 0%,#155a8a 60%,#0d3a5c 100%);
+  letter-spacing:.04em;
+}
+.btn-premium::after{
+  content:"";position:absolute;top:0;bottom:0;width:45%;left:-60%;transform:skewX(-20deg);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);
+  transition:left .5s ease;
+}
+.btn-premium:hover::after{left:130%;}
+.btn-premium:hover{filter:brightness(1.15);transform:translateY(-2px);box-shadow:0 12px 28px rgba(21,90,138,.4);}
+.btn-premium:active{transform:translateY(0) scale(.99);}
+.login-dica{text-align:center;font-size:.78rem;color:var(--texto-suave);margin-top:.9rem;}
+.login-rodape{text-align:center;font-size:.75rem;color:#93a5b1;margin-top:1.1rem;letter-spacing:.04em;position:relative;z-index:1;}
 </style>
+
+<div class="login-fundo" aria-hidden="true"><div class="orbe o1"></div><div class="orbe o2"></div><div class="orbe o3"></div></div>
 
 <div class="login-palco">
   <div class="login-card">
     <div class="login-topo">
       <div class="login-selo"><img src="{% static 'logos/logo_canil.png' %}" alt="Canil 10° BAEP"></div>
       <h1>CANIL</h1>
-      <p>Gestão de plantel</p>
+      <p>10° BAEP · Gestão de plantel</p>
     </div>
     <div class="login-corpo">
       <form method="post">
         {% csrf_token %}
         <div class="form-linha">
           <label>Usuário</label>
+          <span class="icone">👤</span>
           {{ form.username }}
         </div>
         <div class="form-linha">
           <label>Senha</label>
+          <span class="icone">🔒</span>
           {{ form.password }}
         </div>
         {% if form.errors %}<div class="login-erro">Usuário ou senha inválidos. Tente novamente.</div>{% endif %}
-        <button class="btn login-btn" type="submit">Entrar no sistema</button>
+        <button class="btn btn-premium" type="submit">Entrar no sistema →</button>
+        <div class="login-dica">Acesso restrito · Se esqueceu a senha, fale com o administrador do canil.</div>
       </form>
     </div>
   </div>
-  <p class="login-rodape">Acesso restrito<br>Sistema de Gestão do Canil</p>
+  <p class="login-rodape">🐕 Sistema de Gestão do Canil<br>Instalável no celular · use o banner "Instalar o app"</p>
 </div>
 {% endblock %}
