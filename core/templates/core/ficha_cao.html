@@ -26,6 +26,13 @@
 </div>
 
 <h2><span class="secao-titulo">Pesagens <span class="contador">{{ pesagens|length }}</span></span> <a href="{% url 'pesagem_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+{% if evolucao_peso_json %}
+<div class="card">
+  <div style="font-size:0.9rem;color:var(--azul-escuro);margin-bottom:0.5rem;"><b>Evolução do peso (kg)</b></div>
+  <canvas id="graficoPeso" height="90"></canvas>
+  {{ evolucao_peso_json|json_script:"dados-peso" }}
+</div>
+{% endif %}
 <div class="lista-registros">
   {% for p in pesagens %}
   <div class="registro">
@@ -142,25 +149,6 @@
   {% if evolucao_json %}
   <canvas id="graficoEvolucao" height="90"></canvas>
   {{ evolucao_json|json_script:"dados-evolucao" }}
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-  <script>
-    const dados = JSON.parse(document.getElementById('dados-evolucao').textContent);
-    new Chart(document.getElementById('graficoEvolucao'), {
-      type: 'line',
-      data: {
-        labels: dados.map(d => d.data),
-        datasets: [{
-          label: 'Nota de avaliação',
-          data: dados.map(d => d.nota),
-          borderColor: '#2f8fc4',
-          backgroundColor: 'rgba(47,143,196,0.15)',
-          tension: 0.25,
-          fill: true,
-        }]
-      },
-      options: { scales: { y: { min: 0, max: 10 } } }
-    });
-  </script>
   {% else %}
   <p style="color:#666;font-size:0.88rem;">Nenhuma nota de avaliação registrada ainda. Preencha o campo "Nota de avaliação" ao lançar um treinamento para visualizar o gráfico de evolução aqui.</p>
   {% endif %}
@@ -198,4 +186,71 @@
   </div>
   {% empty %}<div class="vazio">Nenhum documento anexado.</div>{% endfor %}
 </div>
+
+<h2><span class="secao-titulo">Ocorrências policiais <span class="contador">{{ ocorrencias_policiais|length }}</span></span> <a href="{% url 'ocorrencia_cao_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
+<div class="lista-registros">
+  {% for o in ocorrencias_policiais %}
+  <div class="registro">
+    <div class="principal">
+      <div class="titulo">{{ o.get_tipo_display }}{% if o.numero_bo %} · {{ o.numero_bo }}{% endif %}</div>
+      <div class="meta">{{ o.data|date:"d/m/Y" }}{% if o.local %} · {{ o.local }}{% endif %}{% if o.condutor %} · {{ o.condutor.nome }}{% endif %}</div>
+      {% if o.resumo_apreensao != "-" %}<div class="meta">{{ o.resumo_apreensao }}{% if o.descricao_armas %} — {{ o.descricao_armas }}{% endif %}</div>{% endif %}
+    </div>
+    <div class="acoes">
+      <a class="link-acao" href="{% url 'ocorrencia_cao_editar' cao.pk o.pk %}">Editar</a>
+      <a class="link-acao perigo" href="{% url 'ocorrencia_cao_excluir' cao.pk o.pk %}">Excluir</a>
+    </div>
+  </div>
+  {% empty %}<div class="vazio">Nenhuma ocorrência policial registrada para este cão.</div>{% endfor %}
+</div>
+
+{% if evolucao_json or evolucao_peso_json %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+  {% if evolucao_json %}
+  (function () {
+    const el = document.getElementById('graficoEvolucao');
+    if (!el) return;
+    const dados = JSON.parse(document.getElementById('dados-evolucao').textContent);
+    new Chart(el, {
+      type: 'line',
+      data: {
+        labels: dados.map(d => d.data),
+        datasets: [{
+          label: 'Nota de avaliação',
+          data: dados.map(d => d.nota),
+          borderColor: '#2f8fc4',
+          backgroundColor: 'rgba(47,143,196,0.15)',
+          tension: 0.25,
+          fill: true,
+        }]
+      },
+      options: { scales: { y: { min: 0, max: 10 } } }
+    });
+  })();
+  {% endif %}
+  {% if evolucao_peso_json %}
+  (function () {
+    const el = document.getElementById('graficoPeso');
+    if (!el) return;
+    const dados = JSON.parse(document.getElementById('dados-peso').textContent);
+    new Chart(el, {
+      type: 'line',
+      data: {
+        labels: dados.map(d => d.data),
+        datasets: [{
+          label: 'Peso (kg)',
+          data: dados.map(d => d.peso),
+          borderColor: '#1f7a52',
+          backgroundColor: 'rgba(31,122,82,0.15)',
+          tension: 0.25,
+          fill: true,
+        }]
+      },
+      options: { scales: { y: { beginAtZero: false } } }
+    });
+  })();
+  {% endif %}
+</script>
+{% endif %}
 {% endblock %}

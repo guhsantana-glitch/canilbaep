@@ -342,3 +342,83 @@ class VisitaTecnica(models.Model):
 
     def __str__(self):
         return f"Visita {self.data} - {self.cao.nome}"
+
+
+class OcorrenciaPolicial(models.Model):
+    """Ocorrência operacional com emprego de cão farejador / patrulha.
+
+    Tipificação PMESP: F01 (tráfico de drogas), J09 (arma de fogo),
+    G01 (captura de procurado).
+    """
+
+    class Tipo(models.TextChoices):
+        F01 = "F01", "F01 — Tráfico de drogas"
+        J09 = "J09", "J09 — Arma de fogo"
+        G01 = "G01", "G01 — Captura de procurado"
+
+    class DrogaTipo(models.TextChoices):
+        NA = "NA", "Não se aplica / nenhuma"
+        MACONHA = "MACONHA", "Maconha"
+        COCAINA = "COCAINA", "Cocaína"
+        CRACK = "CRACK", "Crack"
+        ECSTASY = "ECSTASY", "Ecstasy / sintéticas"
+        HAXIXE = "HAXIXE", "Haxixe / skunk"
+        OUTRA = "OUTRA", "Outra (descrever nas observações)"
+
+    class DrogaUnidade(models.TextChoices):
+        G = "G", "g (gramas)"
+        KG = "KG", "kg (quilos)"
+        UN = "UN", "un (porções/pinos/pedras)"
+
+    cao = models.ForeignKey(
+        Cao, on_delete=models.CASCADE, related_name="ocorrencias_policiais",
+        verbose_name="Cão empregado",
+    )
+    data = models.DateField("Data da ocorrência")
+    tipo = models.CharField("Tipo de ocorrência", max_length=3, choices=Tipo.choices)
+    numero_bo = models.CharField("Nº do BO / RDO", max_length=40, blank=True)
+    local = models.CharField("Local da ocorrência", max_length=200, blank=True)
+    condutor = models.ForeignKey(
+        Condutor, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="ocorrencias_policiais", verbose_name="Condutor / responsável pelo cão",
+    )
+    droga_tipo = models.CharField(
+        "Tipo de droga apreendida", max_length=10,
+        choices=DrogaTipo.choices, default=DrogaTipo.NA,
+    )
+    droga_quantidade = models.DecimalField(
+        "Quantidade de droga", max_digits=10, decimal_places=3,
+        null=True, blank=True,
+    )
+    droga_unidade = models.CharField(
+        "Unidade da droga", max_length=2,
+        choices=DrogaUnidade.choices, default=DrogaUnidade.G,
+    )
+    qtd_armas = models.PositiveIntegerField("Quantidade de armas apreendidas", default=0)
+    descricao_armas = models.CharField(
+        "Descrição das armas (tipo/calibre/modelo)", max_length=250, blank=True,
+    )
+    qtd_procurados = models.PositiveIntegerField("Procurados capturados", default=0)
+    observacoes = models.TextField("Observações / detalhes da ocorrência", blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Ocorrência policial"
+        verbose_name_plural = "Ocorrências policiais"
+        ordering = ["-data", "-id"]
+
+    def __str__(self):
+        return f"{self.get_tipo_display()} — {self.cao.nome} ({self.data})"
+
+    @property
+    def resumo_apreensao(self):
+        partes = []
+        if self.droga_tipo != self.DrogaTipo.NA and self.droga_quantidade:
+            partes.append(
+                f"{self.get_droga_tipo_display()}: {self.droga_quantidade} {self.get_droga_unidade_display()}"
+            )
+        if self.qtd_armas:
+            partes.append(f"{self.qtd_armas} arma(s)")
+        if self.qtd_procurados:
+            partes.append(f"{self.qtd_procurados} procurado(s)")
+        return " · ".join(partes) if partes else "-"

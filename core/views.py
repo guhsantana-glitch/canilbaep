@@ -14,13 +14,13 @@ from canis.utils import canil_atual
 from .models import (
     Cao, Condutor, Vacina, Medicamento, Pesagem, Treinamento, Documento,
     Veterinario, TipoVacina, Vermifugacao, Ectoparasita, OcorrenciaSaude,
-    VisitaTecnica,
+    VisitaTecnica, OcorrenciaPolicial,
 )
 from .forms import (
     CaoForm, CondutorForm, VacinaForm, MedicamentoForm,
     PesagemForm, TreinamentoForm, DocumentoForm, RelatorioMensalForm, RelatorioGeralForm,
     VeterinarioForm, TipoVacinaForm, VermifugacaoForm, EctoparasitaForm,
-    OcorrenciaSaudeForm, VisitaTecnicaForm,
+    OcorrenciaSaudeForm, VisitaTecnicaForm, OcorrenciaPolicialForm,
 )
 from .pdf_utils import gerar_ficha_box, gerar_relatorio_mensal, gerar_relatorio_geral_mensal, gerar_ficha_sanitaria
 
@@ -137,10 +137,15 @@ def ficha_cao(request, pk):
         {"data": t.data.strftime("%d/%m/%Y"), "nota": float(t.nota_avaliacao)}
         for t in treinamentos.exclude(nota_avaliacao__isnull=True).order_by("data")
     ]
+    pesagens_qs = cao.pesagens.all()
+    evolucao_peso = [
+        {"data": p.data.strftime("%d/%m/%Y"), "peso": float(p.peso_kg)}
+        for p in pesagens_qs.order_by("data")
+    ]
     return render(request, "core/ficha_cao.html", {
         "cao": cao,
         "hoje": timezone.now().date(),
-        "pesagens": cao.pesagens.all()[:30],
+        "pesagens": pesagens_qs[:30],
         "vacinas": cao.vacinas.select_related("tipo", "veterinario").all(),
         "vermifugacoes": cao.vermifugacoes.select_related("veterinario").all(),
         "ectoparasitas": cao.ectoparasitas.select_related("veterinario").all(),
@@ -149,7 +154,9 @@ def ficha_cao(request, pk):
         "medicamentos": cao.medicamentos.select_related("veterinario").all(),
         "treinamentos": treinamentos,
         "documentos": cao.documentos.all(),
+        "ocorrencias_policiais": cao.ocorrencias_policiais.select_related("condutor").all(),
         "evolucao_json": evolucao,
+        "evolucao_peso_json": evolucao_peso,
     })
 
 
@@ -319,6 +326,96 @@ def visita_tecnica_form_view(request, cao_pk, pk=None):
 @exigir_canil
 def visita_tecnica_excluir(request, cao_pk, pk):
     return _registro_excluir_view(request, cao_pk, pk, VisitaTecnica)
+
+
+# ---------- Ocorrências policiais (F01 / J09 / G01) ----------
+
+@exigir_canil
+def lista_ocorrencias(request):
+    canil = request.canil_escopo
+    ocorrencias = (
+        OcorrenciaPolicial.objects
+        .select_related("cao", "condutor")
+        .filter(cao__canil=canil)
+    )
+    tipo = request.GET.get("tipo")
+    busca = request.GET.get("q", "").strip()
+    if tipo:
+        ocorrencias = ocorrencias.filter(tipo=tipo)
+    if busca:
+        ocorrencias = ocorrencias.filter(
+            Q(cao__nome__icontains=busca)
+            | Q(numero_bo__icontains=busca)
+            | Q(local__icontains=busca)
+        )
+    # Totais do filtro atual (para o cabeçalho da página)
+    from django.db.models import Sum
+    totais = ocorrencias.aggregate(
+        total_armas=Sum("qtd_armas"),
+        total_procurados=Sum("qtd_procurados"),
+    )
+    return render(request, "core/lista_ocorrencias.html", {
+        "ocorrencias": ocorrencias[:200],
+        "tipo_choices": OcorrenciaPolicial.Tipo.choices,
+        "tipo_selecionado": tipo or "",
+        "busca": busca,
+        "totais": totais,
+    })
+
+
+@exigir_canil
+def ocorrencia_policial_form_view(request, pk=None, cao_pk=None):
+    """Form global (/ocorrencias/nova/) ou vinculado ao cão (/caes/<cao_pk>/...)."""
+    canil = request.canil_escopo
+    cao_fixo = _get(Cao, request, cao_pk) if cao_pk else None
+    if pk:
+        if cao_fixo:
+            instancia = get_object_or_404(OcorrenciaPolicial, pk=pk, cao=cao_fixo)
+        else:
+            instancia = get_object_or_404(OcorrenciaPolicial, pk=pk, cao__canil=canil)
+    else:
+        instancia = None
+    if request.method == "POST":
+        form = _form(OcorrenciaPolicialForm, canil, request.POST, instance=instancia)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            if cao_fixo:
+                obj.cao = cao_fixo
+            # Segurança multi-canil: o cão precisa ser do canil em operação
+            if obj.cao.canil_id != canil.pk:
+                messages.error(request, "Cão de outro canil.")
+                return redirect("lista_ocorrencias")
+            obj.save()
+            messages.success(request, "Ocorrência salva com sucesso.")
+            if cao_fixo:
+                return redirect("ficha_cao", pk=cao_fixo.pk)
+            return redirect("lista_ocorrencias")
+    else:
+        inicial = {"cao": cao_fixo} if cao_fixo and instancia is None else None
+        form = _form(OcorrenciaPolicialForm, canil, instance=instancia, initial=inicial)
+    return render(request, "core/ocorrencia_form.html", {
+        "form": form, "cao": cao_fixo or (instancia.cao if instancia else None),
+        "editando": instancia is not None,
+    })
+
+
+@exigir_canil
+def ocorrencia_policial_excluir(request, pk, cao_pk=None):
+    canil = request.canil_escopo
+    if cao_pk:
+        cao = _get(Cao, request, cao_pk)
+        obj = get_object_or_404(OcorrenciaPolicial, pk=pk, cao=cao)
+        destino = ("ficha_cao", cao.pk)
+    else:
+        obj = get_object_or_404(OcorrenciaPolicial, pk=pk, cao__canil=canil)
+        destino = ("lista_ocorrencias", None)
+    if request.method == "POST":
+        obj.delete()
+        messages.success(request, "Ocorrência excluída.")
+        if destino[0] == "ficha_cao":
+            return redirect(destino[0], pk=destino[1])
+        return redirect(destino[0])
+    return render(request, "core/confirmar_exclusao.html", {"objeto": obj, "tipo": "ocorrência policial"})
 
 
 # ---------- Condutores ----------

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  {% if cao %}<a href="{% url 'ficha_cao' cao.pk %}" class="btn btn-secundario">← Voltar para {{ cao.nome }}</a>
+  {% else %}<a href="{% url 'lista_ocorrencias' %}" class="btn btn-secundario">← Voltar</a>{% endif %}
+</div>
+<span class="eyebrow">F01 · J09 · G01</span>
+<h1>{% if editando %}Editar ocorrência{% else %}Nova ocorrência policial{% endif %}{% if cao %} — {{ cao.nome }}{% endif %}</h1>
+<form method="post" class="card">
+  {% csrf_token %}
+  {% for field in form %}
+  <div class="form-linha">
+    <label>{{ field.label }}</label>
+    {{ field }}
+    {% if field.help_text %}<p style="color:#5b6f7c;font-size:0.8rem;">{{ field.help_text }}</p>{% endif %}
+    {% if field.errors %}<p style="color:#8a3324;font-size:0.8rem;">{{ field.errors|striptags }}</p>{% endif %}
+  </div>
+  {% endfor %}
+  <button class="btn" type="submit">Salvar</button>
+  {% if cao %}<a href="{% url 'ficha_cao' cao.pk %}" class="btn btn-secundario">Cancelar</a>
+  {% else %}<a href="{% url 'lista_ocorrencias' %}" class="btn btn-secundario">Cancelar</a>{% endif %}
+</form>
+{% endblock %}

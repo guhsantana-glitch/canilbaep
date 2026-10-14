@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Condutor, Cao, Vacina, Medicamento, Pesagem, Treinamento, Documento,
     Veterinario, TipoVacina, Vermifugacao, Ectoparasita, OcorrenciaSaude,
-    VisitaTecnica,
+    VisitaTecnica, OcorrenciaPolicial,
 )
 
 
@@ -51,12 +51,17 @@ class VisitaTecnicaInline(admin.TabularInline):
     extra = 0
 
 
+class OcorrenciaPolicialInline(admin.TabularInline):
+    model = OcorrenciaPolicial
+    extra = 0
+
+
 @admin.register(Cao)
 class CaoAdmin(admin.ModelAdmin):
     list_display = ("nome", "raca", "sexo", "status", "condutor_atual", "box", "patrimonio", "data_ingresso")
     list_filter = ("status", "sexo", "raca")
     search_fields = ("nome", "microchip", "box", "patrimonio")
-    inlines = [PesagemInline, VacinaInline, VermifugacaoInline, EctoparasitaInline, OcorrenciaSaudeInline, VisitaTecnicaInline, MedicamentoInline, TreinamentoInline, DocumentoInline]
+    inlines = [PesagemInline, VacinaInline, VermifugacaoInline, EctoparasitaInline, OcorrenciaSaudeInline, VisitaTecnicaInline, MedicamentoInline, TreinamentoInline, DocumentoInline, OcorrenciaPolicialInline]
 
 
 @admin.register(Condutor)
@@ -132,3 +137,10 @@ class VisitaTecnicaAdmin(admin.ModelAdmin):
 class TipoVacinaAdmin(admin.ModelAdmin):
     list_display = ("nome", "nome_comercial", "fabricante", "partida", "data_validade", "ativo")
     list_filter = ("ativo",)
+
+
+@admin.register(OcorrenciaPolicial)
+class OcorrenciaPolicialAdmin(admin.ModelAdmin):
+    list_display = ("data", "tipo", "cao", "droga_tipo", "droga_quantidade", "qtd_armas", "qtd_procurados")
+    list_filter = ("tipo", "droga_tipo")
+    search_fields = ("cao__nome", "numero_bo", "local")

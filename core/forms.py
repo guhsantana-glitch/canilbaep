@@ -2,7 +2,7 @@ from django import forms
 from .models import (
     Cao, Condutor, Vacina, Medicamento, Pesagem, Treinamento, Documento,
     Veterinario, TipoVacina, Vermifugacao, Ectoparasita, OcorrenciaSaude,
-    VisitaTecnica,
+    VisitaTecnica, OcorrenciaPolicial,
 )
 
 ISO_DATE = "%Y-%m-%d"
@@ -165,6 +165,30 @@ class VisitaTecnicaForm(forms.ModelForm):
     class Meta:
         model = VisitaTecnica
         fields = ["data", "medico_veterinario", "observacoes"]
+
+
+class OcorrenciaPolicialForm(forms.ModelForm):
+    data = DataISOField(label="Data da ocorrência")
+
+    def __init__(self, *args, canil=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if canil is not None:
+            self.fields["cao"].queryset = Cao.objects.filter(canil=canil).order_by("nome")
+            self.fields["condutor"].queryset = Condutor.objects.filter(canil=canil).order_by("nome")
+
+    class Meta:
+        model = OcorrenciaPolicial
+        fields = [
+            "cao", "data", "tipo", "numero_bo", "local", "condutor",
+            "droga_tipo", "droga_quantidade", "droga_unidade",
+            "qtd_armas", "descricao_armas", "qtd_procurados", "observacoes",
+        ]
+        widgets = {
+            "observacoes": forms.Textarea(attrs={"rows": 3}),
+            "descricao_armas": forms.TextInput(attrs={"placeholder": "Ex: 1 pistola .40 + 2 revólveres .38"}),
+            "local": forms.TextInput(attrs={"placeholder": "Ex: Rua X, bairro Y — Piracicaba/SP"}),
+            "numero_bo": forms.TextInput(attrs={"placeholder": "Ex: BO 1234/2026"}),
+        }
 
 
 class RelatorioMensalForm(forms.Form):
