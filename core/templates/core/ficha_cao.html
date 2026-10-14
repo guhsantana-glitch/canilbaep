@@ -25,232 +25,297 @@
   {% if cao.observacoes %}<p style="margin-top:0.8rem;"><b>Outras observações:</b> {{ cao.observacoes }}</p>{% endif %}
 </div>
 
-<h2><span class="secao-titulo">Pesagens <span class="contador">{{ pesagens|length }}</span></span> <a href="{% url 'pesagem_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-{% if evolucao_peso_json %}
-<div class="card">
-  <div style="font-size:0.9rem;color:var(--azul-escuro);margin-bottom:0.5rem;"><b>Evolução do peso (kg)</b></div>
-  <canvas id="graficoPeso" height="90"></canvas>
-  {{ evolucao_peso_json|json_script:"dados-peso" }}
-</div>
-{% endif %}
-<div class="lista-registros">
-  {% for p in pesagens %}
-  <div class="registro">
-    <div class="principal">
-      <div class="titulo">{{ p.data|date:"d/m/Y" }}{% if p.observacoes %} · {{ p.observacoes }}{% endif %}</div>
-    </div>
-    <div class="destaque">{{ p.peso_kg }} kg</div>
-    <div class="acoes">
-      <a class="link-acao" href="{% url 'pesagem_editar' cao.pk p.pk %}">Editar</a>
-      <a class="link-acao perigo" href="{% url 'pesagem_excluir' cao.pk p.pk %}">Excluir</a>
-    </div>
+<div class="tabs">
+  <div class="tab-bar" role="tablist">
+    <button class="tab-btn ativo" data-tab="peso">⚖️ Peso <span class="contador">{{ pesagens|length }}</span></button>
+    <button class="tab-btn" data-tab="vacinas">💉 Vacinas <span class="contador">{{ vacinas|length }}</span></button>
+    <button class="tab-btn" data-tab="vermifugacoes">🪱 Vermif. <span class="contador">{{ vermifugacoes|length }}</span></button>
+    <button class="tab-btn" data-tab="ectoparasitas">🦟 Ecto. <span class="contador">{{ ectoparasitas|length }}</span></button>
+    <button class="tab-btn" data-tab="saude">🏥 Saúde <span class="contador">{{ ocorrencias_saude|length }}</span></button>
+    <button class="tab-btn" data-tab="visitas">🩺 Visitas <span class="contador">{{ visitas_tecnicas|length }}</span></button>
+    <button class="tab-btn" data-tab="medicamentos">💊 Medic. <span class="contador">{{ medicamentos|length }}</span></button>
+    <button class="tab-btn" data-tab="treinamento">🎓 Treino <span class="contador">{{ treinamentos|length }}</span></button>
+    <button class="tab-btn" data-tab="documentos">📄 Docs <span class="contador">{{ documentos|length }}</span></button>
+    <button class="tab-btn" data-tab="ocorrencias">🚨 Ocorr. <span class="contador">{{ ocorrencias_policiais|length }}</span></button>
   </div>
-  {% empty %}<div class="vazio">Nenhuma pesagem registrada.</div>{% endfor %}
-</div>
 
-<h2><span class="secao-titulo">Vacinas <span class="contador">{{ vacinas|length }}</span></span> <a href="{% url 'vacina_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<div class="lista-registros">
-  {% for v in vacinas %}
-  <div class="registro {% if v.data_proxima_dose and v.data_proxima_dose < hoje %}alerta{% elif v.data_proxima_dose %}ok{% endif %}">
-    <div class="principal">
-      <div class="titulo">{{ v.tipo.nome }}{% if v.tipo.nome_comercial %} ({{ v.tipo.nome_comercial }}){% endif %}{% if v.data_proxima_dose %}{% if v.data_proxima_dose < hoje %}<span class="pill pill-vermelha">Revacinar</span>{% else %}<span class="pill pill-verde">Em dia</span>{% endif %}{% endif %}</div>
-      <div class="meta">Vacinado em {{ v.data_aplicacao|date:"d/m/Y" }}{% if v.data_proxima_dose %} · Revacinar em {{ v.data_proxima_dose|date:"d/m/Y" }}{% endif %} · {{ v.veterinario.nome|default:"Sem veterinário" }}</div>
+  <section class="tab-panel ativo" id="tab-peso">
+    <div class="panel-head"><h2>Pesagens</h2><a href="{% url 'pesagem_nova' cao.pk %}" class="btn">+ Registrar</a></div>
+    {% if evolucao_peso_json %}
+    <div class="card">
+      <div style="font-size:0.9rem;color:var(--azul-escuro);margin-bottom:0.5rem;"><b>Evolução do peso (kg)</b></div>
+      <canvas id="graficoPeso" height="90"></canvas>
+      {{ evolucao_peso_json|json_script:"dados-peso" }}
     </div>
-    <div class="acoes">
-      <a class="link-acao" href="{% url 'vacina_editar' cao.pk v.pk %}">Editar</a>
-      <a class="link-acao perigo" href="{% url 'vacina_excluir' cao.pk v.pk %}">Excluir</a>
+    {% endif %}
+    <div class="lista-registros">
+      {% for p in pesagens %}
+      <div class="registro">
+        <div class="principal"><div class="titulo">{{ p.data|date:"d/m/Y" }}{% if p.observacoes %} · {{ p.observacoes }}{% endif %}</div></div>
+        <div class="destaque">{{ p.peso_kg }} kg</div>
+        <div class="acoes">
+          <a class="link-acao" href="{% url 'pesagem_editar' cao.pk p.pk %}">Editar</a>
+          <a class="link-acao perigo" href="{% url 'pesagem_excluir' cao.pk p.pk %}">Excluir</a>
+        </div>
+      </div>
+      {% empty %}<div class="vazio">Nenhuma pesagem registrada.</div>{% endfor %}
     </div>
-  </div>
-  {% empty %}<div class="vazio">Nenhuma vacina registrada.</div>{% endfor %}
-</div>
+  </section>
 
-<h2><span class="secao-titulo">Vermifugações <span class="contador">{{ vermifugacoes|length }}</span></span> <a href="{% url 'vermifugacao_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<div class="lista-registros">
-  {% for v in vermifugacoes %}
-  <div class="registro">
-    <div class="principal">
-      <div class="titulo">{{ v.vermifugo }}</div>
-      <div class="meta">Aplicado em {{ v.data_aplicacao|date:"d/m/Y" }} · {{ v.veterinario.nome|default:"Sem veterinário" }}{% if v.lote %} · Lote {{ v.lote }}{% endif %}</div>
+  <section class="tab-panel" id="tab-vacinas">
+    <div class="panel-head"><h2>Vacinas</h2><a href="{% url 'vacina_nova' cao.pk %}" class="btn">+ Registrar</a></div>
+    <div class="lista-registros">
+      {% for v in vacinas %}
+      <div class="registro {% if v.data_proxima_dose and v.data_proxima_dose < hoje %}alerta{% elif v.data_proxima_dose %}ok{% endif %}">
+        <div class="principal">
+          <div class="titulo">{{ v.tipo.nome }}{% if v.tipo.nome_comercial %} ({{ v.tipo.nome_comercial }}){% endif %}{% if v.data_proxima_dose %}{% if v.data_proxima_dose < hoje %}<span class="pill pill-vermelha">Revacinar</span>{% else %}<span class="pill pill-verde">Em dia</span>{% endif %}{% endif %}</div>
+          <div class="meta">Vacinado em {{ v.data_aplicacao|date:"d/m/Y" }}{% if v.data_proxima_dose %} · Revacinar em {{ v.data_proxima_dose|date:"d/m/Y" }}{% endif %} · {{ v.veterinario.nome|default:"Sem veterinário" }}</div>
+        </div>
+        <div class="acoes">
+          <a class="link-acao" href="{% url 'vacina_editar' cao.pk v.pk %}">Editar</a>
+          <a class="link-acao perigo" href="{% url 'vacina_excluir' cao.pk v.pk %}">Excluir</a>
+        </div>
+      </div>
+      {% empty %}<div class="vazio">Nenhuma vacina registrada.</div>{% endfor %}
     </div>
-    <div class="acoes">
-      <a class="link-acao" href="{% url 'vermifugacao_editar' cao.pk v.pk %}">Editar</a>
-      <a class="link-acao perigo" href="{% url 'vermifugacao_excluir' cao.pk v.pk %}">Excluir</a>
-    </div>
-  </div>
-  {% empty %}<div class="vazio">Nenhuma vermifugação registrada.</div>{% endfor %}
-</div>
+  </section>
 
-<h2><span class="secao-titulo">Controle de ectoparasitas <span class="contador">{{ ectoparasitas|length }}</span></span> <a href="{% url 'ectoparasita_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<div class="lista-registros">
-  {% for e in ectoparasitas %}
-  <div class="registro">
-    <div class="principal">
-      <div class="titulo">{{ e.procedimento }}</div>
-      <div class="meta">Aplicado em {{ e.data_aplicacao|date:"d/m/Y" }} · {{ e.veterinario.nome|default:"Sem veterinário" }}</div>
+  <section class="tab-panel" id="tab-vermifugacoes">
+    <div class="panel-head"><h2>Vermifugações</h2><a href="{% url 'vermifugacao_nova' cao.pk %}" class="btn">+ Registrar</a></div>
+    <div class="lista-registros">
+      {% for v in vermifugacoes %}
+      <div class="registro">
+        <div class="principal">
+          <div class="titulo">{{ v.vermifugo }}</div>
+          <div class="meta">Aplicado em {{ v.data_aplicacao|date:"d/m/Y" }} · {{ v.veterinario.nome|default:"Sem veterinário" }}{% if v.lote %} · Lote {{ v.lote }}{% endif %}</div>
+        </div>
+        <div class="acoes">
+          <a class="link-acao" href="{% url 'vermifugacao_editar' cao.pk v.pk %}">Editar</a>
+          <a class="link-acao perigo" href="{% url 'vermifugacao_excluir' cao.pk v.pk %}">Excluir</a>
+        </div>
+      </div>
+      {% empty %}<div class="vazio">Nenhuma vermifugação registrada.</div>{% endfor %}
     </div>
-    <div class="acoes">
-      <a class="link-acao" href="{% url 'ectoparasita_editar' cao.pk e.pk %}">Editar</a>
-      <a class="link-acao perigo" href="{% url 'ectoparasita_excluir' cao.pk e.pk %}">Excluir</a>
-    </div>
-  </div>
-  {% empty %}<div class="vazio">Nenhum controle de ectoparasita registrado.</div>{% endfor %}
-</div>
+  </section>
 
-<h2><span class="secao-titulo">Saúde — anormalidades <span class="contador">{{ ocorrencias_saude|length }}</span></span> <a href="{% url 'ocorrencia_saude_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<div class="lista-registros">
-  {% for o in ocorrencias_saude %}
-  <div class="registro alerta">
-    <div class="principal">
-      <div class="titulo">{{ o.anormalidade }}</div>
-      <div class="meta">{{ o.data|date:"d/m/Y" }} · {{ o.veterinario.nome|default:"Sem veterinário" }}{% if o.medicamento %} · {{ o.medicamento }}{% endif %}</div>
+  <section class="tab-panel" id="tab-ectoparasitas">
+    <div class="panel-head"><h2>Ectoparasitas</h2><a href="{% url 'ectoparasita_novo' cao.pk %}" class="btn">+ Registrar</a></div>
+    <div class="lista-registros">
+      {% for e in ectoparasitas %}
+      <div class="registro">
+        <div class="principal">
+          <div class="titulo">{{ e.procedimento }}</div>
+          <div class="meta">Aplicado em {{ e.data_aplicacao|date:"d/m/Y" }} · {{ e.veterinario.nome|default:"Sem veterinário" }}</div>
+        </div>
+        <div class="acoes">
+          <a class="link-acao" href="{% url 'ectoparasita_editar' cao.pk e.pk %}">Editar</a>
+          <a class="link-acao perigo" href="{% url 'ectoparasita_excluir' cao.pk e.pk %}">Excluir</a>
+        </div>
+      </div>
+      {% empty %}<div class="vazio">Nenhum controle de ectoparasita registrado.</div>{% endfor %}
     </div>
-    <div class="acoes">
-      <a class="link-acao" href="{% url 'ocorrencia_saude_editar' cao.pk o.pk %}">Editar</a>
-      <a class="link-acao perigo" href="{% url 'ocorrencia_saude_excluir' cao.pk o.pk %}">Excluir</a>
-    </div>
-  </div>
-  {% empty %}<div class="vazio">Nenhuma ocorrência de saúde registrada.</div>{% endfor %}
-</div>
+  </section>
 
-<h2><span class="secao-titulo">Visitas técnicas veterinárias <span class="contador">{{ visitas_tecnicas|length }}</span></span> <a href="{% url 'visita_tecnica_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<div class="lista-registros">
-  {% for v in visitas_tecnicas %}
-  <div class="registro">
-    <div class="principal">
-      <div class="titulo">{{ v.data|date:"d/m/Y" }} · {{ v.medico_veterinario }}</div>
-      {% if v.observacoes %}<div class="meta">{{ v.observacoes|truncatechars:120 }}</div>{% endif %}
+  <section class="tab-panel" id="tab-saude">
+    <div class="panel-head"><h2>Saúde — anormalidades</h2><a href="{% url 'ocorrencia_saude_nova' cao.pk %}" class="btn">+ Registrar</a></div>
+    <div class="lista-registros">
+      {% for o in ocorrencias_saude %}
+      <div class="registro alerta">
+        <div class="principal">
+          <div class="titulo">{{ o.anormalidade }}</div>
+          <div class="meta">{{ o.data|date:"d/m/Y" }} · {{ o.veterinario.nome|default:"Sem veterinário" }}{% if o.medicamento %} · {{ o.medicamento }}{% endif %}</div>
+        </div>
+        <div class="acoes">
+          <a class="link-acao" href="{% url 'ocorrencia_saude_editar' cao.pk o.pk %}">Editar</a>
+          <a class="link-acao perigo" href="{% url 'ocorrencia_saude_excluir' cao.pk o.pk %}">Excluir</a>
+        </div>
+      </div>
+      {% empty %}<div class="vazio">Nenhuma ocorrência de saúde registrada.</div>{% endfor %}
     </div>
-    <div class="acoes">
-      <a class="link-acao" href="{% url 'visita_tecnica_editar' cao.pk v.pk %}">Editar</a>
-      <a class="link-acao perigo" href="{% url 'visita_tecnica_excluir' cao.pk v.pk %}">Excluir</a>
-    </div>
-  </div>
-  {% empty %}<div class="vazio">Nenhuma visita técnica registrada.</div>{% endfor %}
-</div>
+  </section>
 
-<h2><span class="secao-titulo">Medicamentos <span class="contador">{{ medicamentos|length }}</span></span> <a href="{% url 'medicamento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<div class="lista-registros">
-  {% for m in medicamentos %}
-  <div class="registro">
-    <div class="principal">
-      <div class="titulo">{{ m.nome }} · {{ m.dosagem }}{% if not m.data_fim or m.data_fim >= hoje %}<span class="pill pill-verde">Em uso</span>{% else %}<span class="pill pill-cinza">Encerrado</span>{% endif %}</div>
-      <div class="meta">{{ m.data_inicio|date:"d/m/Y" }} a {{ m.data_fim|date:"d/m/Y"|default:"—" }}{% if m.motivo %} · {{ m.motivo }}{% endif %} · {{ m.veterinario.nome|default:"Sem veterinário" }}</div>
+  <section class="tab-panel" id="tab-visitas">
+    <div class="panel-head"><h2>Visitas técnicas</h2><a href="{% url 'visita_tecnica_nova' cao.pk %}" class="btn">+ Registrar</a></div>
+    <div class="lista-registros">
+      {% for v in visitas_tecnicas %}
+      <div class="registro">
+        <div class="principal">
+          <div class="titulo">{{ v.data|date:"d/m/Y" }} · {{ v.medico_veterinario }}</div>
+          {% if v.observacoes %}<div class="meta">{{ v.observacoes|truncatechars:120 }}</div>{% endif %}
+        </div>
+        <div class="acoes">
+          <a class="link-acao" href="{% url 'visita_tecnica_editar' cao.pk v.pk %}">Editar</a>
+          <a class="link-acao perigo" href="{% url 'visita_tecnica_excluir' cao.pk v.pk %}">Excluir</a>
+        </div>
+      </div>
+      {% empty %}<div class="vazio">Nenhuma visita técnica registrada.</div>{% endfor %}
     </div>
-    <div class="acoes">
-      <a class="link-acao" href="{% url 'medicamento_editar' cao.pk m.pk %}">Editar</a>
-      <a class="link-acao perigo" href="{% url 'medicamento_excluir' cao.pk m.pk %}">Excluir</a>
-    </div>
-  </div>
-  {% empty %}<div class="vazio">Nenhum medicamento registrado.</div>{% endfor %}
-</div>
+  </section>
 
-<h2>Evolução do treinamento (nota por avaliação)</h2>
-<div class="card">
-  {% if evolucao_json %}
-  <canvas id="graficoEvolucao" height="90"></canvas>
-  {{ evolucao_json|json_script:"dados-evolucao" }}
-  {% else %}
-  <p style="color:#666;font-size:0.88rem;">Nenhuma nota de avaliação registrada ainda. Preencha o campo "Nota de avaliação" ao lançar um treinamento para visualizar o gráfico de evolução aqui.</p>
-  {% endif %}
-</div>
+  <section class="tab-panel" id="tab-medicamentos">
+    <div class="panel-head"><h2>Medicamentos</h2><a href="{% url 'medicamento_novo' cao.pk %}" class="btn">+ Registrar</a></div>
+    <div class="lista-registros">
+      {% for m in medicamentos %}
+      <div class="registro">
+        <div class="principal">
+          <div class="titulo">{{ m.nome }} · {{ m.dosagem }}{% if not m.data_fim or m.data_fim >= hoje %}<span class="pill pill-verde">Em uso</span>{% else %}<span class="pill pill-cinza">Encerrado</span>{% endif %}</div>
+          <div class="meta">{{ m.data_inicio|date:"d/m/Y" }} a {{ m.data_fim|date:"d/m/Y"|default:"—" }}{% if m.motivo %} · {{ m.motivo }}{% endif %} · {{ m.veterinario.nome|default:"Sem veterinário" }}</div>
+        </div>
+        <div class="acoes">
+          <a class="link-acao" href="{% url 'medicamento_editar' cao.pk m.pk %}">Editar</a>
+          <a class="link-acao perigo" href="{% url 'medicamento_excluir' cao.pk m.pk %}">Excluir</a>
+        </div>
+      </div>
+      {% empty %}<div class="vazio">Nenhum medicamento registrado.</div>{% endfor %}
+    </div>
+  </section>
 
-<h2><span class="secao-titulo">Treinamentos <span class="contador">{{ treinamentos|length }}</span></span> <a href="{% url 'treinamento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<div class="lista-registros">
-  {% for t in treinamentos %}
-  <div class="registro">
-    <div class="principal">
-      <div class="titulo">{{ t.get_etapa_display }}{% if t.nota_avaliacao %}<span class="pill pill-cinza">Nota {{ t.nota_avaliacao }}</span>{% endif %}</div>
-      <div class="meta">{{ t.data|date:"d/m/Y" }}{% if t.instrutor %} · {{ t.instrutor }}{% endif %}{% if t.resultado %} · {{ t.resultado }}{% endif %}</div>
-      {% if t.descricao %}<div class="meta">{{ t.descricao|truncatechars:140 }}</div>{% endif %}
+  <section class="tab-panel" id="tab-treinamento">
+    <div class="panel-head"><h2>Treinamentos</h2><a href="{% url 'treinamento_novo' cao.pk %}" class="btn">+ Registrar</a></div>
+    <div class="card">
+      {% if evolucao_json %}
+      <div style="font-size:0.9rem;color:var(--azul-escuro);margin-bottom:0.5rem;"><b>Evolução do treinamento (nota por avaliação)</b></div>
+      <canvas id="graficoEvolucao" height="90"></canvas>
+      {{ evolucao_json|json_script:"dados-evolucao" }}
+      {% else %}
+      <p style="color:#666;font-size:0.88rem;">Nenhuma nota de avaliação registrada ainda. Preencha o campo "Nota de avaliação" ao lançar um treinamento para visualizar o gráfico aqui.</p>
+      {% endif %}
     </div>
-    <div class="acoes">
-      <a class="link-acao" href="{% url 'treinamento_editar' cao.pk t.pk %}">Editar</a>
-      <a class="link-acao perigo" href="{% url 'treinamento_excluir' cao.pk t.pk %}">Excluir</a>
+    <div class="lista-registros">
+      {% for t in treinamentos %}
+      <div class="registro">
+        <div class="principal">
+          <div class="titulo">{{ t.get_etapa_display }}{% if t.nota_avaliacao %}<span class="pill pill-cinza">Nota {{ t.nota_avaliacao }}</span>{% endif %}</div>
+          <div class="meta">{{ t.data|date:"d/m/Y" }}{% if t.instrutor %} · {{ t.instrutor }}{% endif %}{% if t.resultado %} · {{ t.resultado }}{% endif %}</div>
+          {% if t.descricao %}<div class="meta">{{ t.descricao|truncatechars:140 }}</div>{% endif %}
+        </div>
+        <div class="acoes">
+          <a class="link-acao" href="{% url 'treinamento_editar' cao.pk t.pk %}">Editar</a>
+          <a class="link-acao perigo" href="{% url 'treinamento_excluir' cao.pk t.pk %}">Excluir</a>
+        </div>
+      </div>
+      {% empty %}<div class="vazio">Nenhum treinamento registrado.</div>{% endfor %}
     </div>
-  </div>
-  {% empty %}<div class="vazio">Nenhum treinamento registrado.</div>{% endfor %}
-</div>
+  </section>
 
-<h2><span class="secao-titulo">Documentos e exames <span class="contador">{{ documentos|length }}</span></span> <a href="{% url 'documento_novo' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Anexar</a></h2>
-<div class="lista-registros">
-  {% for d in documentos %}
-  <div class="registro">
-    <div class="principal">
-      <div class="titulo">{{ d.titulo }}</div>
-      <div class="meta">{{ d.get_tipo_display }}{% if d.data_documento %} · {{ d.data_documento|date:"d/m/Y" }}{% endif %}</div>
+  <section class="tab-panel" id="tab-documentos">
+    <div class="panel-head"><h2>Documentos e exames</h2><a href="{% url 'documento_novo' cao.pk %}" class="btn">+ Anexar</a></div>
+    <div class="lista-registros">
+      {% for d in documentos %}
+      <div class="registro">
+        <div class="principal">
+          <div class="titulo">{{ d.titulo }}</div>
+          <div class="meta">{{ d.get_tipo_display }}{% if d.data_documento %} · {{ d.data_documento|date:"d/m/Y" }}{% endif %}</div>
+        </div>
+        <div class="acoes">
+          <a class="link-acao" href="{{ d.arquivo.url }}" target="_blank">Abrir</a>
+          <a class="link-acao perigo" href="{% url 'documento_excluir' cao.pk d.pk %}">Excluir</a>
+        </div>
+      </div>
+      {% empty %}<div class="vazio">Nenhum documento anexado.</div>{% endfor %}
     </div>
-    <div class="acoes">
-      <a class="link-acao" href="{{ d.arquivo.url }}" target="_blank">Abrir</a>
-      <a class="link-acao perigo" href="{% url 'documento_excluir' cao.pk d.pk %}">Excluir</a>
-    </div>
-  </div>
-  {% empty %}<div class="vazio">Nenhum documento anexado.</div>{% endfor %}
-</div>
+  </section>
 
-<h2><span class="secao-titulo">Ocorrências policiais <span class="contador">{{ ocorrencias_policiais|length }}</span></span> <a href="{% url 'ocorrencia_cao_nova' cao.pk %}" class="btn" style="font-size:0.78rem;padding:0.3rem 0.7rem;float:right;">+ Registrar</a></h2>
-<div class="lista-registros">
-  {% for o in ocorrencias_policiais %}
-  <div class="registro">
-    <div class="principal">
-      <div class="titulo">{{ o.get_tipo_display }}{% if o.numero_bo %} · {{ o.numero_bo }}{% endif %}</div>
-      <div class="meta">{{ o.data|date:"d/m/Y" }}{% if o.local %} · {{ o.local }}{% endif %}{% if o.condutor %} · {{ o.condutor.nome }}{% endif %}</div>
-      {% if o.resumo_apreensao != "-" %}<div class="meta">{{ o.resumo_apreensao }}{% if o.descricao_armas %} — {{ o.descricao_armas }}{% endif %}</div>{% endif %}
+  <section class="tab-panel" id="tab-ocorrencias">
+    <div class="panel-head"><h2>Ocorrências policiais</h2><a href="{% url 'ocorrencia_cao_nova' cao.pk %}" class="btn">+ Registrar</a></div>
+    <div class="lista-registros">
+      {% for o in ocorrencias_policiais %}
+      <div class="registro">
+        <div class="principal">
+          <div class="titulo">{{ o.get_tipo_display }}{% if o.numero_bo %} · {{ o.numero_bo }}{% endif %}</div>
+          <div class="meta">{{ o.data|date:"d/m/Y" }}{% if o.local %} · {{ o.local }}{% endif %}{% if o.condutor %} · {{ o.condutor.nome }}{% endif %}</div>
+          {% if o.resumo_apreensao != "-" %}<div class="meta">{{ o.resumo_apreensao }}{% if o.descricao_armas %} — {{ o.descricao_armas }}{% endif %}</div>{% endif %}
+        </div>
+        <div class="acoes">
+          <a class="link-acao" href="{% url 'ocorrencia_cao_editar' cao.pk o.pk %}">Editar</a>
+          <a class="link-acao perigo" href="{% url 'ocorrencia_cao_excluir' cao.pk o.pk %}">Excluir</a>
+        </div>
+      </div>
+      {% empty %}<div class="vazio">Nenhuma ocorrência policial registrada para este cão.</div>{% endfor %}
     </div>
-    <div class="acoes">
-      <a class="link-acao" href="{% url 'ocorrencia_cao_editar' cao.pk o.pk %}">Editar</a>
-      <a class="link-acao perigo" href="{% url 'ocorrencia_cao_excluir' cao.pk o.pk %}">Excluir</a>
-    </div>
-  </div>
-  {% empty %}<div class="vazio">Nenhuma ocorrência policial registrada para este cão.</div>{% endfor %}
+  </section>
 </div>
 
 {% if evolucao_json or evolucao_peso_json %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-  {% if evolucao_json %}
-  (function () {
-    const el = document.getElementById('graficoEvolucao');
-    if (!el) return;
-    const dados = JSON.parse(document.getElementById('dados-evolucao').textContent);
-    new Chart(el, {
+(function () {
+  var charts = {};
+  function montarPeso() {
+    if (charts.peso) return;
+    var el = document.getElementById('graficoPeso');
+    var src = document.getElementById('dados-peso');
+    if (!el || !src || typeof Chart === 'undefined') return;
+    var dados = JSON.parse(src.textContent);
+    charts.peso = new Chart(el, {
       type: 'line',
-      data: {
-        labels: dados.map(d => d.data),
-        datasets: [{
-          label: 'Nota de avaliação',
-          data: dados.map(d => d.nota),
-          borderColor: '#2f8fc4',
-          backgroundColor: 'rgba(47,143,196,0.15)',
-          tension: 0.25,
-          fill: true,
-        }]
-      },
-      options: { scales: { y: { min: 0, max: 10 } } }
-    });
-  })();
-  {% endif %}
-  {% if evolucao_peso_json %}
-  (function () {
-    const el = document.getElementById('graficoPeso');
-    if (!el) return;
-    const dados = JSON.parse(document.getElementById('dados-peso').textContent);
-    new Chart(el, {
-      type: 'line',
-      data: {
-        labels: dados.map(d => d.data),
-        datasets: [{
-          label: 'Peso (kg)',
-          data: dados.map(d => d.peso),
-          borderColor: '#1f7a52',
-          backgroundColor: 'rgba(31,122,82,0.15)',
-          tension: 0.25,
-          fill: true,
-        }]
-      },
+      data: { labels: dados.map(d => d.data), datasets: [{
+        label: 'Peso (kg)', data: dados.map(d => d.peso),
+        borderColor: '#1f7a52', backgroundColor: 'rgba(31,122,82,0.15)',
+        tension: 0.25, fill: true }] },
       options: { scales: { y: { beginAtZero: false } } }
     });
+  }
+  function montarTreino() {
+    if (charts.treino) return;
+    var el = document.getElementById('graficoEvolucao');
+    var src = document.getElementById('dados-evolucao');
+    if (!el || !src || typeof Chart === 'undefined') return;
+    var dados = JSON.parse(src.textContent);
+    charts.treino = new Chart(el, {
+      type: 'line',
+      data: { labels: dados.map(d => d.data), datasets: [{
+        label: 'Nota de avaliação', data: dados.map(d => d.nota),
+        borderColor: '#2f8fc4', backgroundColor: 'rgba(47,143,196,0.15)',
+        tension: 0.25, fill: true }] },
+      options: { scales: { y: { min: 0, max: 10 } } }
+    });
+  }
+  function montarVisiveis() {
+    if (document.getElementById('tab-peso').classList.contains('ativo')) montarPeso();
+    if (document.getElementById('tab-treinamento').classList.contains('ativo')) montarTreino();
+  }
+  // Abas
+  var botoes = document.querySelectorAll('.tab-btn');
+  botoes.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      botoes.forEach(b => b.classList.remove('ativo'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('ativo'));
+      btn.classList.add('ativo');
+      var alvo = document.getElementById('tab-' + btn.dataset.tab);
+      if (alvo) alvo.classList.add('ativo');
+      try { history.replaceState(null, '', '#' + btn.dataset.tab); } catch (e) {}
+      montarVisiveis();
+      document.body.classList.remove('menu-aberto');
+    });
+  });
+  // Aba inicial via hash (#vacinas, #ocorrencias...)
+  (function () {
+    var hash = (location.hash || '').replace('#', '');
+    if (hash) {
+      var btn = document.querySelector('.tab-btn[data-tab="' + hash + '"]');
+      if (btn) btn.click();
+    }
   })();
-  {% endif %}
+  window.addEventListener('load', montarVisiveis);
+  montarVisiveis();
+})();
+</script>
+{% else %}
+<script>
+(function () {
+  var botoes = document.querySelectorAll('.tab-btn');
+  botoes.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      botoes.forEach(b => b.classList.remove('ativo'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('ativo'));
+      btn.classList.add('ativo');
+      var alvo = document.getElementById('tab-' + btn.dataset.tab);
+      if (alvo) alvo.classList.add('ativo');
+      try { history.replaceState(null, '', '#' + btn.dataset.tab); } catch (e) {}
+    });
+  });
+})();
 </script>
 {% endif %}
 {% endblock %}

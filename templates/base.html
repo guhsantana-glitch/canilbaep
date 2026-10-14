@@ -20,9 +20,10 @@
   --sombra:0 2px 14px rgba(21,90,138,.10);
   --sombra-forte:0 8px 28px rgba(21,90,138,.16);
   --raio:12px;
+  --sidebar-w:248px;
 }
 *{box-sizing:border-box;}
-b,strong{font-weight:400;}
+b,strong{font-weight:600;}
 body{
   margin:0;
   font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -32,98 +33,112 @@ body{
   color:var(--texto);
   -webkit-font-smoothing:antialiased;
 }
-header.topo{
-  background:linear-gradient(120deg,var(--azul-profundo) 0%,var(--azul-escuro) 65%,#1c6ea1 100%);
+.app{display:flex;min-height:100vh;}
+/* ===== Sidebar ===== */
+.sidebar{
+  width:var(--sidebar-w);
+  background:linear-gradient(180deg,#0d3a5c 0%,#124e7c 55%,#155a8a 100%);
   color:#fff;
-  padding:.8rem 1.6rem;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:1rem;
-  flex-wrap:wrap;
-  box-shadow:0 2px 14px rgba(13,58,92,.35);
-  position:sticky;
-  top:0;
-  z-index:50;
+  position:fixed;inset:0 auto 0 0;
+  display:flex;flex-direction:column;
+  z-index:100;
+  box-shadow:4px 0 24px rgba(13,58,92,.25);
+  transition:transform .25s ease;
 }
-header.topo .marca{
-  display:flex;
-  align-items:center;
-  gap:.75rem;
-  font-weight:400;
-  letter-spacing:.04em;
-  font-size:1.02rem;
-  line-height:1.25;
+.sidebar .marca{
+  display:flex;align-items:center;gap:.7rem;
+  padding:1.1rem 1.1rem .9rem;
+  border-bottom:1px solid rgba(255,255,255,.12);
 }
-header.topo .marca .selo{
-  width:46px;height:46px;border-radius:10px;
-  background:rgba(255,255,255,.12);
+.sidebar .marca .selo{
+  width:46px;height:46px;border-radius:12px;
+  background:rgba(255,255,255,.14);
   border:1px solid rgba(255,255,255,.35);
-  color:#fff;
   display:flex;align-items:center;justify-content:center;
-  font-weight:400;font-size:.85rem;
-  overflow:hidden;
-  flex-shrink:0;
+  overflow:hidden;flex-shrink:0;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.25);
 }
-.menu-toggle{display:none;}
-.menu-toggle-label{
-  display:none;
-  cursor:pointer;
-  font-size:1.5rem;
-  color:#fff;
-  line-height:1;
-  padding:.2rem .4rem;
+.sidebar .marca .tit{line-height:1.2;font-size:.95rem;letter-spacing:.05em;}
+.sidebar .marca .tit small{display:block;font-size:.68rem;opacity:.75;letter-spacing:.14em;}
+.sidebar nav.menu{
+  display:flex;flex-direction:column;gap:.25rem;
+  padding:1rem .8rem;flex:1;overflow-y:auto;
 }
-nav.menu{
-  display:flex;gap:.35rem;
-  font-size:.9rem;
-  font-weight:400;
-  flex-wrap:wrap;
+.sidebar nav.menu .grupo{
+  font-size:.66rem;text-transform:uppercase;letter-spacing:.14em;
+  opacity:.6;padding:.6rem .6rem .25rem;
 }
-nav.menu a{
+.sidebar nav.menu a{
   color:rgba(255,255,255,.88);
   text-decoration:none;
-  padding:.42rem .8rem;
-  border-radius:8px;
-  white-space:nowrap;
-  transition:background .15s,color .15s;
+  padding:.62rem .8rem;border-radius:10px;
+  font-size:.9rem;display:flex;align-items:center;gap:.65rem;
+  transition:background .18s,transform .18s,box-shadow .18s,color .18s;
+  border:1px solid transparent;
 }
-nav.menu a:hover{background:rgba(255,255,255,.14);color:#fff;}
-nav.menu a.ativo{background:rgba(255,255,255,.2);color:#fff;}
-.usuario-area{font-size:.85rem;display:flex;gap:.8rem;align-items:center;color:rgba(255,255,255,.9);}
-.usuario-area a{color:#fff;}
-.usuario-area button[type="submit"]{color:#fff !important;}
-
-@media (max-width: 780px){
-  .menu-toggle-label{display:block;}
-  nav.menu{
-    display:none;
-    width:100%;
-    flex-direction:column;
-    gap:.2rem;
-    background:rgba(255,255,255,.08);
-    padding:.7rem;
-    border-radius:10px;
-    order:3;
-  }
-  .menu-toggle:checked ~ nav.menu{display:flex;}
-  header.topo{padding:.7rem 1rem;}
+.sidebar nav.menu a .ico{width:1.4rem;text-align:center;opacity:.9;}
+.sidebar nav.menu a:hover{
+  background:rgba(255,255,255,.14);
+  color:#fff;transform:translateX(3px);
+  box-shadow:0 4px 14px rgba(0,0,0,.18);
+  filter:brightness(1.12);
 }
-
+.sidebar nav.menu a.ativo{
+  background:rgba(255,255,255,.2);
+  color:#fff;border-color:rgba(255,255,255,.25);
+  box-shadow:0 4px 14px rgba(0,0,0,.2);
+}
+.sidebar .usuario-card{
+  margin:.8rem;padding:.8rem .9rem;border-radius:12px;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.16);
+  font-size:.82rem;
+}
+.sidebar .usuario-card .nome{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sidebar .usuario-card .row{display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-top:.5rem;}
+.sidebar .usuario-card a{color:#fff;}
+.sidebar .usuario-card button[type="submit"]{
+  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);
+  color:#fff;border-radius:8px;padding:.3rem .7rem;cursor:pointer;font-size:.8rem;
+  transition:filter .15s,transform .15s;
+}
+.sidebar .usuario-card button[type="submit"]:hover{filter:brightness(1.2);transform:translateY(-1px);}
+/* ===== Main ===== */
+.main-wrapper{flex:1;margin-left:var(--sidebar-w);display:flex;flex-direction:column;min-width:0;}
+.topbar{
+  position:sticky;top:0;z-index:90;
+  background:rgba(255,255,255,.85);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--borda);
+  padding:.6rem 1.4rem;display:flex;align-items:center;gap:.8rem;
+}
+.topbar .hamburger{
+  display:none;border:1px solid var(--borda);background:#fff;border-radius:9px;
+  font-size:1.2rem;padding:.25rem .6rem;cursor:pointer;
+  transition:filter .15s,transform .15s;
+}
+.topbar .hamburger:hover{filter:brightness(.96);transform:translateY(-1px);}
+.topbar .page-hint{font-size:.85rem;color:var(--texto-suave);}
+.topbar .spacer{flex:1;}
 main{
-  max-width:1100px;
+  max-width:1100px;width:100%;
   margin:0 auto;
   padding:2rem 1.5rem 3.5rem;
   animation:entrada .25s ease;
 }
 @keyframes entrada{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
-
-/* Tabelas: em telas estreitas, rolam por dentro (sem empurrar a página inteira) */
+@media (max-width: 900px){
+  .sidebar{transform:translateX(-100%);}
+  body.menu-aberto .sidebar{transform:none;}
+  .main-wrapper{margin-left:0;}
+  .topbar .hamburger{display:inline-block;}
+}
+.scrim{display:none;}
+@media (max-width: 900px){
+  body.menu-aberto .scrim{display:block;position:fixed;inset:0;background:rgba(13,58,92,.4);z-index:99;}
+}
 @media (max-width: 780px){
   main{padding:1.2rem .9rem 3rem;}
   h1{font-size:1.3rem;overflow-wrap:anywhere;}
-  h2{font-size:1.02rem;}
   table{font-size:.85rem;display:block;overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;max-width:100%;}
   .registro{padding:.7rem .85rem;}
   .registro .destaque{font-size:1rem;}
@@ -132,107 +147,76 @@ main{
   .barra-acoes .btn{flex:1 1 auto;text-align:center;}
   .filtro-barra{padding:.9rem;}
 }
-h1{font-size:1.55rem;color:var(--azul-profundo);margin:.2rem 0 .6rem;letter-spacing:-.01em;font-weight:400;}
-h2{font-size:1.12rem;color:var(--azul-escuro);border-bottom:2px solid var(--azul-claro2);padding-bottom:.45rem;margin-top:2.2rem;font-weight:400;display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;}
+h1{font-size:1.55rem;color:var(--azul-profundo);margin:.2rem 0 .6rem;letter-spacing:-.01em;font-weight:600;}
+h2{font-size:1.12rem;color:var(--azul-escuro);border-bottom:2px solid var(--azul-claro2);padding-bottom:.45rem;margin-top:2.2rem;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;}
 h2 .btn{flex-shrink:0;}
 .eyebrow{
-  text-transform:uppercase;
-  letter-spacing:.14em;
-  font-size:.7rem;
-  font-weight:400;
+  text-transform:uppercase;letter-spacing:.14em;font-size:.7rem;font-weight:600;
   color:var(--azul-escuro);
   background:linear-gradient(180deg,#fff,var(--azul-claro));
-  border:1px solid var(--azul-claro2);
-  display:inline-block;
-  padding:.28rem .7rem;
-  border-radius:999px;
-  margin-bottom:.6rem;
+  border:1px solid var(--azul-claro2);display:inline-block;
+  padding:.28rem .7rem;border-radius:999px;margin-bottom:.6rem;
   box-shadow:0 1px 4px rgba(21,90,138,.08);
 }
 .card{
-  background:#fff;
-  border:1px solid var(--borda);
-  border-radius:var(--raio);
-  padding:1.3rem 1.5rem;
-  margin-bottom:1.2rem;
-  box-shadow:var(--sombra);
+  background:#fff;border:1px solid var(--borda);border-radius:var(--raio);
+  padding:1.3rem 1.5rem;margin-bottom:1.2rem;box-shadow:var(--sombra);
 }
 table{width:100%;border-collapse:separate;border-spacing:0;font-size:.92rem;background:#fff;border:1px solid var(--borda);border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra);}
 th{
-  text-align:left;
-  background:linear-gradient(180deg,#38a0d4,var(--azul-medio));
-  color:#fff;
-  padding:.65rem .8rem;
-  font-weight:400;
-  font-size:.82rem;
-  text-transform:uppercase;
-  letter-spacing:.05em;
-  white-space:nowrap;
+  text-align:left;background:linear-gradient(180deg,#38a0d4,var(--azul-medio));
+  color:#fff;padding:.65rem .8rem;font-weight:600;font-size:.82rem;
+  text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;
 }
 td{padding:.6rem .8rem;border-bottom:1px solid #eaf1f6;}
 tr:last-child td{border-bottom:none;}
 tbody tr:hover td{background:var(--azul-claro);}
 .tag{
-  display:inline-block;
-  padding:.2rem .65rem;
-  border-radius:999px;
-  font-size:.74rem;
-  font-weight:400;
-  letter-spacing:.02em;
+  display:inline-block;padding:.2rem .65rem;border-radius:999px;
+  font-size:.74rem;font-weight:600;letter-spacing:.02em;
 }
 .tag-ativo{background:#dcf0e6;color:#1f7a52;}
 .tag-treinamento{background:var(--azul-claro2);color:var(--azul-escuro);}
 .tag-baixado{background:#f6dfdd;color:var(--alerta);}
 .tag-obito{background:#e6e6e6;color:#555;}
+/* ===== Botões com efeitos + clareamento ===== */
 .btn{
-  display:inline-block;
-  padding:.55rem 1.1rem;
-  border-radius:9px;
-  background:linear-gradient(180deg,#1b6a9c,var(--azul-escuro));
-  color:#fff !important;
-  text-decoration:none;
-  font-size:.87rem;
-  font-weight:400;
-  border:1px solid transparent;
-  cursor:pointer;
-  box-shadow:0 2px 8px rgba(21,90,138,.25);
-  transition:transform .12s,box-shadow .12s,filter .12s;
+  display:inline-block;padding:.55rem 1.1rem;border-radius:10px;
+  background:linear-gradient(180deg,#2a86bd 0%,#155a8a 100%);
+  color:#fff !important;text-decoration:none;font-size:.87rem;font-weight:600;
+  border:1px solid rgba(255,255,255,.25);cursor:pointer;
+  box-shadow:0 2px 8px rgba(21,90,138,.25), inset 0 1px 0 rgba(255,255,255,.25);
+  transition:transform .15s ease,box-shadow .15s ease,filter .15s ease;
 }
-.btn:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 5px 14px rgba(21,90,138,.3);}
-.btn:active{transform:none;}
-.btn-secundario{background:#fff;color:var(--azul-escuro) !important;border:1px solid var(--azul-medio);box-shadow:none;}
-.btn-secundario:hover{background:var(--azul-claro);}
-.btn-perigo{background:linear-gradient(180deg,#c14a43,var(--alerta));}
+.btn:hover{filter:brightness(1.15);transform:translateY(-2px);box-shadow:0 8px 20px rgba(21,90,138,.32), inset 0 1px 0 rgba(255,255,255,.35);}
+.btn:active{transform:translateY(0) scale(.98);filter:brightness(.98);}
+.btn-secundario{background:#fff;color:var(--azul-escuro) !important;border:1px solid var(--azul-medio);box-shadow:0 1px 4px rgba(21,90,138,.1);}
+.btn-secundario:hover{background:var(--azul-claro);filter:brightness(1.03);box-shadow:0 6px 16px rgba(47,143,196,.25);}
+.btn-perigo{background:linear-gradient(180deg,#d0564e 0%,#a63a34 100%);}
+.btn-perigo:hover{filter:brightness(1.12);}
 .barra-acoes{display:flex;gap:.6rem;flex-wrap:wrap;margin:1rem 0;align-items:center;}
-.grid-caes{
-  display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-  gap:1.1rem;
-  margin-top:1rem;
-}
+.grid-caes{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1.1rem;margin-top:1rem;}
 .ficha-cao{
-  background:#fff;border:1px solid var(--borda);border-radius:14px;
-  overflow:hidden;transition:transform .15s,box-shadow .15s;
-  text-decoration:none;color:var(--texto);display:flex;flex-direction:column;
-  box-shadow:var(--sombra);
+  background:#fff;border:1px solid var(--borda);border-radius:14px;overflow:hidden;
+  transition:transform .18s,box-shadow .18s;text-decoration:none;color:var(--texto);
+  display:flex;flex-direction:column;box-shadow:var(--sombra);
 }
-.ficha-cao:hover{box-shadow:var(--sombra-forte);transform:translateY(-3px);}
+.ficha-cao:hover{box-shadow:var(--sombra-forte);transform:translateY(-4px);filter:brightness(1.02);}
 .ficha-cao .foto{
   height:150px;background:linear-gradient(135deg,var(--azul-claro2),var(--azul-medio));
-  display:flex;align-items:center;justify-content:center;
-  color:#fff;font-size:2.4rem;font-weight:400;
-  background-size:cover;background-position:center;
-  text-shadow:0 2px 8px rgba(13,58,92,.4);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:2.4rem;font-weight:600;
+  background-size:cover;background-position:center;text-shadow:0 2px 8px rgba(13,58,92,.4);
 }
 .ficha-cao .info{padding:.9rem 1rem 1.05rem;flex:1;}
-.ficha-cao .info h3{margin:0 0 .25rem;font-size:1.08rem;color:var(--azul-profundo);font-weight:400;}
+.ficha-cao .info h3{margin:0 0 .25rem;font-size:1.08rem;color:var(--azul-profundo);font-weight:600;}
 .ficha-cao .info p{margin:.12rem 0;font-size:.82rem;color:var(--texto-suave);}
 .form-linha{margin-bottom:1rem;}
-.form-linha label{display:block;font-size:.84rem;font-weight:400;margin-bottom:.3rem;color:var(--azul-escuro);}
+.form-linha label{display:block;font-size:.84rem;font-weight:600;margin-bottom:.3rem;color:var(--azul-escuro);}
 .form-linha input, .form-linha select, .form-linha textarea{
   width:100%;padding:.6rem .7rem;border:1px solid #c4d8e5;border-radius:9px;font-size:.92rem;font-family:inherit;
-  background:#fbfdff;transition:border-color .12s,box-shadow .12s;
+  background:#fbfdff;transition:border-color .12s,box-shadow .12s,filter .12s;
 }
+.form-linha input:hover, .form-linha select:hover{filter:brightness(1.01);}
 .form-linha input:focus, .form-linha select:focus, .form-linha textarea:focus{
   outline:none;border-color:var(--azul-medio);box-shadow:0 0 0 3px rgba(47,143,196,.18);background:#fff;
 }
@@ -244,73 +228,127 @@ tbody tr:hover td{background:var(--azul-claro);}
 .msg-info{background:var(--azul-claro);color:var(--azul-escuro);border:1px solid var(--azul-claro2);}
 .filtro-barra{display:flex;gap:.8rem;align-items:end;flex-wrap:wrap;margin-bottom:.8rem;background:#fff;border:1px solid var(--borda);border-radius:var(--raio);padding:1rem 1.2rem;box-shadow:var(--sombra);}
 .secao-titulo{display:flex;align-items:center;gap:.6rem;}
-.contador{display:inline-flex;align-items:center;justify-content:center;min-width:1.6rem;height:1.6rem;padding:0 .45rem;border-radius:999px;background:var(--azul-claro2);color:var(--azul-escuro);font-size:.78rem;}
+.contador{display:inline-flex;align-items:center;justify-content:center;min-width:1.6rem;height:1.6rem;padding:0 .45rem;border-radius:999px;background:var(--azul-claro2);color:var(--azul-escuro);font-size:.78rem;font-weight:700;}
 .lista-registros{display:grid;gap:.65rem;margin-top:.8rem;}
-.registro{background:#fff;border:1px solid var(--borda);border-left:4px solid var(--azul-medio);border-radius:12px;padding:.75rem 1rem;display:flex;gap:.7rem 1rem;align-items:center;flex-wrap:wrap;box-shadow:var(--sombra);}
+.registro{background:#fff;border:1px solid var(--borda);border-left:4px solid var(--azul-medio);border-radius:12px;padding:.75rem 1rem;display:flex;gap:.7rem 1rem;align-items:center;flex-wrap:wrap;box-shadow:var(--sombra);transition:transform .15s,box-shadow .15s,filter .15s;}
+.registro:hover{transform:translateY(-1px);box-shadow:var(--sombra-forte);filter:brightness(1.01);}
 .registro.alerta{border-left-color:var(--alerta);}
 .registro.ok{border-left-color:#3d9a6c;}
 .registro .principal{flex:1;min-width:0;}
-.registro .titulo{font-size:.96rem;color:var(--azul-profundo);overflow:hidden;text-overflow:ellipsis;}
+.registro .titulo{font-size:.96rem;color:var(--azul-profundo);overflow:hidden;text-overflow:ellipsis;font-weight:600;}
 .registro .meta{font-size:.8rem;color:var(--texto-suave);margin-top:.15rem;}
-.registro .destaque{font-size:1.05rem;color:var(--azul-escuro);white-space:nowrap;}
+.registro .destaque{font-size:1.05rem;color:var(--azul-escuro);white-space:nowrap;font-weight:600;}
 .registro .acoes{display:flex;gap:.1rem;flex-shrink:0;margin-left:auto;}
-.link-acao{color:var(--azul-medio);font-size:.8rem;text-decoration:none;padding:.35rem .55rem;border-radius:7px;white-space:nowrap;}
-.link-acao:hover{background:var(--azul-claro);}
+.link-acao{color:var(--azul-medio);font-size:.8rem;text-decoration:none;padding:.35rem .55rem;border-radius:7px;white-space:nowrap;transition:background .15s,filter .15s;}
+.link-acao:hover{background:var(--azul-claro);filter:brightness(1.05);}
 .link-acao.perigo{color:var(--alerta);}
 .link-acao.perigo:hover{background:#f9e4e2;}
-.pill{display:inline-block;padding:.12rem .6rem;border-radius:999px;font-size:.72rem;margin-left:.4rem;vertical-align:middle;}
+.pill{display:inline-block;padding:.12rem .6rem;border-radius:999px;font-size:.72rem;margin-left:.4rem;vertical-align:middle;font-weight:600;}
 .pill-vermelha{background:#f6dfdd;color:var(--alerta);}
 .pill-verde{background:#dcf0e6;color:#1f7a52;}
 .pill-cinza{background:#eceff1;color:#5b6f7c;}
 .vazio{background:#fff;border:1px dashed var(--borda);border-radius:12px;padding:.9rem 1.1rem;color:var(--texto-suave);font-size:.86rem;margin-top:.8rem;}
+/* ===== Abas da ficha ===== */
+.tabs{margin-top:1.2rem;}
+.tab-bar{
+  display:flex;gap:.4rem;flex-wrap:wrap;
+  background:#fff;border:1px solid var(--borda);border-radius:14px;
+  padding:.55rem;box-shadow:var(--sombra);
+  position:sticky;top:60px;z-index:20;
+}
+.tab-btn{
+  border:1px solid transparent;background:transparent;color:var(--texto-suave);
+  padding:.5rem .8rem;border-radius:9px;font-size:.83rem;font-weight:600;cursor:pointer;
+  display:inline-flex;align-items:center;gap:.4rem;
+  transition:background .16s,color .16s,transform .16s,box-shadow .16s,filter .16s;
+}
+.tab-btn:hover{background:var(--azul-claro);color:var(--azul-escuro);transform:translateY(-1px);filter:brightness(1.04);}
+.tab-btn.ativo{
+  background:linear-gradient(180deg,#2a86bd,#155a8a);color:#fff;
+  box-shadow:0 4px 12px rgba(21,90,138,.3);
+}
+.tab-btn .contador{background:rgba(0,0,0,.08);}
+.tab-btn.ativo .contador{background:rgba(255,255,255,.25);color:#fff;}
+.tab-panel{display:none;animation:entrada .2s ease;}
+.tab-panel.ativo{display:block;}
+.tab-panel .panel-head{display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;margin:1rem 0 .2rem;}
+.tab-panel .panel-head h2{margin:0;border:none;padding:0;}
 footer{text-align:center;padding:1.4rem;color:#93a5b1;font-size:.78rem;border-top:1px solid var(--borda);margin-top:1rem;}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:2rem 1rem;}
 </style>
 </head>
 <body>
-<header class="topo">
-  <div class="marca">
-    <div class="selo"><img src="{% static 'logos/logo_canil.png' %}" alt="10° BAEP" style="width:100%;height:100%;object-fit:contain;border-radius:0;"></div>
-    <div>SISTEMA CANIL<br><span style="font-weight:400;font-size:0.72rem;opacity:0.8;">10° BAEP</span></div>
+{% if user.is_authenticated %}
+<div class="app">
+  <div class="scrim" onclick="document.body.classList.remove('menu-aberto')"></div>
+  <aside class="sidebar">
+    <div class="marca">
+      <div class="selo"><img src="{% static 'logos/logo_canil.png' %}" alt="10° BAEP" style="width:100%;height:100%;object-fit:contain;border-radius:0;"></div>
+      <div class="tit">SISTEMA CANIL<small>10° BAEP</small></div>
+    </div>
+    <nav class="menu">
+      {% if user.is_superuser and not request.canil_atual %}
+      <div class="grupo">Administração geral</div>
+      <a href="{% url 'gestao_painel' %}"><span class="ico">🛠️</span>Gestão</a>
+      <a href="{% url 'lista_usuarios' %}"><span class="ico">👥</span>Usuários</a>
+      {% else %}
+      <div class="grupo">Plantel</div>
+      <a href="{% url 'lista_caes' %}"><span class="ico">🐕</span>Cães</a>
+      <a href="{% url 'lista_ocorrencias' %}"><span class="ico">🚨</span>Ocorrências</a>
+      <div class="grupo">Equipe e saúde</div>
+      <a href="{% url 'lista_condutores' %}"><span class="ico">🧑‍✈️</span>Condutores</a>
+      <a href="{% url 'lista_veterinarios' %}"><span class="ico">🩺</span>Veterinários</a>
+      <a href="{% url 'lista_tipos_vacina' %}"><span class="ico">💉</span>Vacinas</a>
+      <div class="grupo">Operação</div>
+      <a href="{% url 'racoes_estoque' %}"><span class="ico">🍖</span>Rações</a>
+      <a href="{% url 'relatorios_menu' %}"><span class="ico">📊</span>Relatórios</a>
+      {% if user.is_superuser %}
+      <div class="grupo">Gestão</div>
+      <a href="{% url 'gestao_painel' %}"><span class="ico">🛠️</span>Gestão</a>
+      <a href="{% url 'lista_usuarios' %}"><span class="ico">👥</span>Usuários</a>
+      {% endif %}
+      {% endif %}
+      {% if user.is_staff %}<a href="/admin/"><span class="ico">🔧</span>Admin</a>{% endif %}
+    </nav>
+    <div class="usuario-card">
+      {% if request.canil_atual %}<span class="tag tag-treinamento">{{ request.canil_atual.nome }}</span>{% endif %}
+      <div class="nome" style="margin-top:.4rem;">{{ user.get_username }}</div>
+      <div class="row">
+        {% if user.is_superuser and request.canil_atual %}<a href="{% url 'gestao_painel' %}">Trocar canil</a>{% endif %}
+        <form method="post" action="{% url 'logout' %}" style="display:inline;margin:0;">
+          {% csrf_token %}
+          <button type="submit">Sair</button>
+        </form>
+      </div>
+    </div>
+  </aside>
+  <div class="main-wrapper">
+    <div class="topbar">
+      <button class="hamburger" onclick="document.body.classList.toggle('menu-aberto')" aria-label="Abrir menu">☰</button>
+      <span class="page-hint">Gestão do plantel · 10° BAEP</span>
+      <span class="spacer"></span>
+      {% if request.canil_atual %}<span class="tag tag-treinamento">{{ request.canil_atual.nome }}</span>{% endif %}
+    </div>
+    <main>
+{% else %}
+<div class="login-wrap">
+  <div style="width:100%;max-width:460px;">
+    <main>
+{% endif %}
+      {% if messages %}
+      <div class="mensagens">
+        {% for m in messages %}<div class="msg msg-{{ m.tags }}">{{ m }}</div>{% endfor %}
+      </div>
+      {% endif %}
+      {% block content %}{% endblock %}
+    </main>
+{% if user.is_authenticated %}
+    <footer>Sistema de Gestão do Canil &middot; Desenvolvido pelo SD PM 161844-0 Gava</footer>
   </div>
-  {% if user.is_authenticated %}
-  <input type="checkbox" id="menu-toggle" class="menu-toggle">
-  <label for="menu-toggle" class="menu-toggle-label">&#9776;</label>
-  <nav class="menu">
-    {% if user.is_superuser and not request.canil_atual %}
-    <a href="{% url 'gestao_painel' %}">Gestão</a>
-    <a href="{% url 'lista_usuarios' %}">Usuários</a>
-    {% else %}
-    <a href="{% url 'lista_caes' %}">Cães</a>
-    <a href="{% url 'lista_ocorrencias' %}">Ocorrências</a>
-    <a href="{% url 'lista_condutores' %}">Condutores</a>
-    <a href="{% url 'lista_veterinarios' %}">Veterinários</a>
-    <a href="{% url 'lista_tipos_vacina' %}">Vacinas</a>
-    <a href="{% url 'racoes_estoque' %}">Rações</a>
-    <a href="{% url 'relatorios_menu' %}">Relatórios</a>
-    {% if user.is_superuser %}<a href="{% url 'gestao_painel' %}">Gestão</a>{% endif %}
-    {% if user.is_superuser %}<a href="{% url 'lista_usuarios' %}">Usuários</a>{% endif %}
-    {% endif %}
-    {% if user.is_staff %}<a href="/admin/">Admin</a>{% endif %}
-  </nav>
-  <div class="usuario-area">
-    {% if request.canil_atual %}<span class="tag tag-treinamento">{{ request.canil_atual.nome }}</span>{% endif %}
-    {% if user.is_superuser and request.canil_atual %}<a href="{% url 'gestao_painel' %}">Trocar canil</a>{% endif %}
-    <span>{{ user.get_username }}</span>
-    <form method="post" action="{% url 'logout' %}" style="display:inline;margin:0;">
-      {% csrf_token %}
-      <button type="submit" style="background:none;border:none;padding:0;color:var(--azul-escuro);cursor:pointer;font-size:0.85rem;text-decoration:underline;">Sair</button>
-    </form>
+</div>
+{% else %}
   </div>
-  {% endif %}
-</header>
-<main>
-  {% if messages %}
-  <div class="mensagens">
-    {% for m in messages %}<div class="msg msg-{{ m.tags }}">{{ m }}</div>{% endfor %}
-  </div>
-  {% endif %}
-  {% block content %}{% endblock %}
-</main>
-<footer>Sistema de Gestão do Canil &middot; Desenvolvido pelo SD PM 161844-0 Gava</footer>
+</div>
+{% endif %}
 </body>
 </html>
