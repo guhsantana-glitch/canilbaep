@@ -514,8 +514,13 @@ def lista_ocorrencias(request):
     )
     tipo = request.GET.get("tipo")
     busca = request.GET.get("q", "").strip()
+    presenca = request.GET.get("cao_presenca", "")
     if tipo:
         ocorrencias = ocorrencias.filter(tipo=tipo)
+    if presenca == "sem":
+        ocorrencias = ocorrencias.filter(cao__isnull=True)
+    elif presenca == "com":
+        ocorrencias = ocorrencias.filter(cao__isnull=False)
     if busca:
         ocorrencias = ocorrencias.filter(
             Q(cao__nome__icontains=busca)
@@ -543,7 +548,9 @@ def lista_ocorrencias(request):
         canil=canil, data__year=ano, data__month=mes,
     ).filter(_q_pelotao(request, prefix="cao__"))
     cao_prod = None
-    if cao_id:
+    if cao_id == "sem":
+        prod_qs = prod_qs.filter(cao__isnull=True)
+    elif cao_id:
         try:
             cao_prod = Cao.objects.filter(_q_pelotao(request)).get(pk=int(cao_id), canil=canil)
             prod_qs = prod_qs.filter(cao=cao_prod)
@@ -571,6 +578,7 @@ def lista_ocorrencias(request):
         "tipo_choices": OcorrenciaPolicial.Tipo.choices,
         "tipo_selecionado": tipo or "",
         "busca": busca,
+        "presenca_selecionada": presenca,
         "totais": totais,
         # produtividade
         "caes": Cao.objects.filter(canil=canil).filter(_q_pelotao(request)).select_related("pelotao", "condutor_atual").order_by("nome"),
@@ -598,7 +606,10 @@ def produtividade_mensal_pdf(request):
         canil=canil, data__year=ano, data__month=mes,
     ).filter(_q_pelotao(request, prefix="cao__"))
     cao_nome = "Todos os cães"
-    if cao_id:
+    if cao_id == "sem":
+        qs = qs.filter(cao__isnull=True)
+        cao_nome = "Sem cão"
+    elif cao_id:
         cao_obj = get_object_or_404(
             Cao.objects.filter(_q_pelotao(request)), pk=cao_id, canil=canil
         )

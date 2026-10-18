@@ -23,6 +23,7 @@
   <form method="get" class="filtro-barra" style="margin-bottom:.6rem;">
     <input type="hidden" name="tipo" value="{{ tipo_selecionado }}">
     {% if busca %}<input type="hidden" name="q" value="{{ busca }}">{% endif %}
+    {% if presenca_selecionada %}<input type="hidden" name="cao_presenca" value="{{ presenca_selecionada }}">{% endif %}
     <div class="form-linha" style="margin:0;min-width:130px;">
       <label>Mês</label>
       <select name="mes" onchange="this.form.submit()">
@@ -43,6 +44,7 @@
       <label>Cão</label>
       <select name="cao" onchange="this.form.submit()">
         <option value="">Todos os cães (total do mês)</option>
+        <option value="sem" {% if cao_prod_id == "sem" %}selected{% endif %}>Somente sem cão</option>
         {% for c in caes %}
         <option value="{{ c.pk }}" {% if cao_prod_id == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
         {% endfor %}
@@ -77,6 +79,14 @@
       {% endfor %}
     </select>
   </div>
+  <div class="form-linha" style="margin:0;min-width:150px;">
+    <label>Cão</label>
+    <select name="cao_presenca" onchange="this.form.submit()">
+      <option value="">Todos</option>
+      <option value="com" {% if presenca_selecionada == "com" %}selected{% endif %}>Com cão</option>
+      <option value="sem" {% if presenca_selecionada == "sem" %}selected{% endif %}>Sem cão</option>
+    </select>
+  </div>
   <div class="form-linha" style="margin:0;flex:1;min-width:200px;">
     <label>Buscar (cão, BO, local, viatura)</label>
     <input type="text" name="q" value="{{ busca }}" placeholder="Ex: Thor, BO 123, B-10123...">
@@ -85,7 +95,7 @@
   <input type="hidden" name="ano" value="{{ ano }}">
   {% if cao_prod_id %}<input type="hidden" name="cao" value="{{ cao_prod_id }}">{% endif %}
   <button class="btn btn-secundario" type="submit">Filtrar</button>
-  {% if tipo_selecionado or busca %}<a href="{% url 'lista_ocorrencias' %}" class="btn btn-secundario">Limpar</a>{% endif %}
+  {% if tipo_selecionado or busca or presenca_selecionada %}<a href="{% url 'lista_ocorrencias' %}" class="btn btn-secundario">Limpar</a>{% endif %}
 </form>
 
 <div class="lista-registros">
