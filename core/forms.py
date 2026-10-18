@@ -192,11 +192,20 @@ class VisitaTecnicaForm(forms.ModelForm):
 
 class OcorrenciaPolicialForm(forms.ModelForm):
     data = DataISOField(label="Data da ocorrência")
+    sem_cao = forms.BooleanField(
+        required=False, label="Sem cão",
+        help_text="Marca para ocorrências sem emprego de cão (ex: E07 Apoio); desabilita cão e condutor.",
+    )
 
     def __init__(self, *args, canil=None, pelotao=None, **kwargs):
         """pelotao: None = sem restrição; instância = só cães/condutores do pelotão;
         False = nenhum (operador sem pelotão)."""
         super().__init__(*args, **kwargs)
+        self.order_fields(["sem_cao"])
+        self.fields["cao"].required = False
+        self.fields["cao"].empty_label = "— Selecione o cão —"
+        if self.instance and self.instance.pk and self.instance.cao_id is None:
+            self.fields["sem_cao"].initial = True
         if canil is not None:
             caes = Cao.objects.filter(canil=canil)
             condutores = Condutor.objects.filter(canil=canil)
@@ -207,6 +216,19 @@ class OcorrenciaPolicialForm(forms.ModelForm):
                 condutores = condutores.filter(pelotao=pelotao)
             self.fields["cao"].queryset = caes.select_related("pelotao").order_by("nome")
             self.fields["condutor"].queryset = condutores.select_related("pelotao").order_by("nome")
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("sem_cao"):
+            cleaned["cao"] = None
+            cleaned["condutor"] = None
+        elif not cleaned.get("cao"):
+            raise forms.ValidationError(
+                "Selecione o cão empregado ou marque a opção 'Sem cão'."
+            )
+        if not cleaned.get("cao"):
+            cleaned["condutor"] = None
+        return cleaned
 
     class Meta:
         model = OcorrenciaPolicial

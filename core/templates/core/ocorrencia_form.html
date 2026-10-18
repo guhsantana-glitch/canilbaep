@@ -4,10 +4,11 @@
   {% if cao %}<a href="{% url 'ficha_cao' cao.pk %}" class="btn btn-secundario">← Voltar para {{ cao.nome }}</a>
   {% else %}<a href="{% url 'lista_ocorrencias' %}" class="btn btn-secundario">← Voltar</a>{% endif %}
 </div>
-<span class="eyebrow">F01 · J09 · G01</span>
+<span class="eyebrow">F01 · J09 · G01 · E07</span>
 <h1>{% if editando %}Editar ocorrência{% else %}Nova ocorrência policial{% endif %}{% if cao %} — {{ cao.nome }}{% endif %}</h1>
 <form method="post" class="card">
   {% csrf_token %}
+  {% if form.non_field_errors %}<p style="color:#8a3324;font-size:0.85rem;">{{ form.non_field_errors|striptags }}</p>{% endif %}
   {% for field in form %}
   <div class="form-linha">
     <label>{{ field.label }}</label>
@@ -20,4 +21,22 @@
   {% if cao %}<a href="{% url 'ficha_cao' cao.pk %}" class="btn btn-secundario">Cancelar</a>
   {% else %}<a href="{% url 'lista_ocorrencias' %}" class="btn btn-secundario">Cancelar</a>{% endif %}
 </form>
+<script>
+(function () {
+  var semCao = document.getElementById('id_sem_cao');
+  var cao = document.getElementById('id_cao');
+  var condutor = document.getElementById('id_condutor');
+  if (!semCao) return;
+  function aplicar() {
+    var desligar = semCao.checked;
+    [cao, condutor].forEach(function (el) {
+      if (!el) return;
+      el.disabled = desligar;
+      if (desligar) el.value = '';
+    });
+  }
+  semCao.addEventListener('change', aplicar);
+  aplicar();
+})();
+</script>
 {% endblock %}

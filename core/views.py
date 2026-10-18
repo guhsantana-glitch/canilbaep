@@ -164,14 +164,18 @@ def _q_pelotao(request, prefix=""):
 
     A visibilidade usa o pelotão do próprio cão (Cao.pelotao).
     prefix: caminho até o cão em querysets de objetos vinculados
-    (ex.: prefix="cao__" para ocorrências policiais).
+    (ex.: prefix="cao__" para ocorrências policiais). Com prefixo, os
+    registros sem cão (cao nulo) são visíveis a todo o canil.
     """
     escopo = _escopo_pelotao(request)
     if escopo is None:
         return Q()
     if escopo is False:
         return Q(pk__in=[])
-    return Q(**{f"{prefix}pelotao_id": escopo.pk})
+    q = Q(**{f"{prefix}pelotao_id": escopo.pk})
+    if prefix:
+        q |= Q(**{f"{prefix}isnull": True})
+    return q
 
 
 def _q_condutor_pelotao(request):
@@ -505,7 +509,7 @@ def lista_ocorrencias(request):
     ocorrencias = (
         OcorrenciaPolicial.objects
         .select_related("cao", "condutor")
-        .filter(cao__canil=canil)
+        .filter(canil=canil)
         .filter(_q_pelotao(request, prefix="cao__"))
     )
     tipo = request.GET.get("tipo")
@@ -536,7 +540,7 @@ def lista_ocorrencias(request):
         mes = hoje.month
     cao_id = request.GET.get("cao", "").strip()
     prod_qs = OcorrenciaPolicial.objects.select_related("cao", "condutor").filter(
-        cao__canil=canil, data__year=ano, data__month=mes,
+        canil=canil, data__year=ano, data__month=mes,
     ).filter(_q_pelotao(request, prefix="cao__"))
     cao_prod = None
     if cao_id:
@@ -555,7 +559,7 @@ def lista_ocorrencias(request):
         "total_procurados": prod_totais_qs["total_procurados"] or 0,
     }
     por_tipo_qs = prod_qs.values("tipo").annotate(n=Count("id"))
-    por_tipo = {"F01": 0, "J09": 0, "G01": 0}
+    por_tipo = {"F01": 0, "J09": 0, "G01": 0, "E07": 0}
     for linha in por_tipo_qs:
         por_tipo[linha["tipo"]] = linha["n"]
     drogas = _drogas_convertidas(prod_qs)
@@ -591,7 +595,7 @@ def produtividade_mensal_pdf(request):
         mes, ano = hoje.month, hoje.year
     cao_id = request.GET.get("cao", "").strip()
     qs = OcorrenciaPolicial.objects.select_related("cao", "condutor").filter(
-        cao__canil=canil, data__year=ano, data__month=mes,
+        canil=canil, data__year=ano, data__month=mes,
     ).filter(_q_pelotao(request, prefix="cao__"))
     cao_nome = "Todos os cães"
     if cao_id:
@@ -603,8 +607,9 @@ def produtividade_mensal_pdf(request):
     qs = qs.order_by("data", "id")
     agg = qs.aggregate(total_armas=Sum("qtd_armas"), total_procurados=Sum("qtd_procurados"))
     totais = {"total_ocorrencias": qs.count(), "total_armas": agg["total_armas"] or 0,
-              "total_procurados": agg["total_procurados"] or 0}
-    por_tipo = {"F01": 0, "J09": 0, "G01": 0}
+              "total_procurados": agg["total_procurados"] or 0,
+              "total_sem_cao": qs.filter(cao__isnull=True).count()}
+    por_tipo = {"F01": 0, "J09": 0, "G01": 0, "E07": 0}
     for linha in qs.values("tipo").annotate(n=Count("id")):
         por_tipo[linha["tipo"]] = linha["n"]
     drogas = _drogas_convertidas(qs)
@@ -628,25 +633,33 @@ def ocorrencia_policial_form_view(request, pk=None, cao_pk=None):
         else:
             instancia = get_object_or_404(
                 OcorrenciaPolicial.objects.filter(_q_pelotao(request, prefix="cao__")),
-                pk=pk, cao__canil=canil,
+                pk=pk, canil=canil,
             )
     else:
         instancia = None
     if request.method == "POST":
         form = _form(OcorrenciaPolicialForm, canil, request.POST, instance=instancia,
                      pelotao=_escopo_pelotao(request))
+        if cao_fixo:
+            form.fields.pop("sem_cao", None)
         if form.is_valid():
             obj = form.save(commit=False)
             if cao_fixo:
                 obj.cao = cao_fixo
-            # Segurança multi-canil: o cão precisa ser do canil em operação
-            if obj.cao.canil_id != canil.pk:
-                messages.error(request, "Cão de outro canil.")
-                return redirect("lista_ocorrencias")
-            # Segurança por pelotão: o cão precisa estar no escopo do usuário
-            if not Cao.objects.filter(_q_pelotao(request)).filter(pk=obj.cao_id, canil=canil).exists():
-                messages.error(request, "Cão de outro pelotão.")
-                return redirect("lista_ocorrencias")
+            if obj.cao:
+                # Segurança multi-canil: o cão precisa ser do canil em operação
+                if obj.cao.canil_id != canil.pk:
+                    messages.error(request, "Cão de outro canil.")
+                    return redirect("lista_ocorrencias")
+                # Segurança por pelotão: o cão precisa estar no escopo do usuário
+                if not Cao.objects.filter(_q_pelotao(request)).filter(pk=obj.cao_id, canil=canil).exists():
+                    messages.error(request, "Cão de outro pelotão.")
+                    return redirect("lista_ocorrencias")
+                obj.canil = obj.cao.canil
+            else:
+                # Ocorrência sem cão: pertence ao canil em operação
+                obj.condutor = None
+                obj.canil = canil
             obj.save()
             messages.success(request, "Ocorrência salva com sucesso.")
             if cao_fixo:
@@ -656,6 +669,8 @@ def ocorrencia_policial_form_view(request, pk=None, cao_pk=None):
         inicial = {"cao": cao_fixo} if cao_fixo and instancia is None else None
         form = _form(OcorrenciaPolicialForm, canil, instance=instancia, initial=inicial,
                      pelotao=_escopo_pelotao(request))
+        if cao_fixo:
+            form.fields.pop("sem_cao", None)
     return render(request, "core/ocorrencia_form.html", {
         "form": form, "cao": cao_fixo or (instancia.cao if instancia else None),
         "editando": instancia is not None,
@@ -672,7 +687,7 @@ def ocorrencia_policial_excluir(request, pk, cao_pk=None):
     else:
         obj = get_object_or_404(
             OcorrenciaPolicial.objects.filter(_q_pelotao(request, prefix="cao__")),
-            pk=pk, cao__canil=canil,
+            pk=pk, canil=canil,
         )
         destino = ("lista_ocorrencias", None)
     if request.method == "POST":

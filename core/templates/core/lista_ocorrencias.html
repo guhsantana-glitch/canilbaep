@@ -17,6 +17,7 @@
     <span class="pill pill-verde">F01 {{ prod_por_tipo.F01 }}</span>
     <span class="pill pill-verde">J09 {{ prod_por_tipo.J09 }}</span>
     <span class="pill pill-verde">G01 {{ prod_por_tipo.G01 }}</span>
+    <span class="pill pill-verde">E07 {{ prod_por_tipo.E07 }}</span>
     <span class="pill pill-cinza">{{ prod_totais.total_armas }} arma(s) · {{ prod_totais.total_procurados }} procurado(s)</span>
   </div>
   <form method="get" class="filtro-barra" style="margin-bottom:.6rem;">
@@ -58,7 +59,7 @@
     {% for o in prod_ocorrencias %}
     <div class="registro">
       <div class="principal">
-        <div class="titulo">{{ o.data|date:"d/m/Y" }} · {{ o.cao.nome }} · {{ o.get_tipo_display }}{% if o.prefixo_viatura %} · Vtr {{ o.prefixo_viatura }}{% endif %}{% if o.numero_bo %} · {{ o.numero_bo }}{% endif %}</div>
+        <div class="titulo">{{ o.data|date:"d/m/Y" }} · {% if o.cao %}{{ o.cao.nome }}{% else %}sem cão{% endif %} · {{ o.get_tipo_display }}{% if o.prefixo_viatura %} · Vtr {{ o.prefixo_viatura }}{% endif %}{% if o.numero_bo %} · {{ o.numero_bo }}{% endif %}</div>
         {% if o.resumo_apreensao != "-" %}<div class="meta">{{ o.resumo_apreensao }}{% if o.descricao_armas %} — {{ o.descricao_armas }}{% endif %}</div>{% endif %}
       </div>
     </div>
@@ -70,7 +71,7 @@
   <div class="form-linha" style="margin:0;min-width:160px;">
     <label>Tipo</label>
     <select name="tipo" onchange="this.form.submit()">
-      <option value="">Todos (F01 / J09 / G01)</option>
+      <option value="">Todos (F01 / J09 / G01 / E07)</option>
       {% for valor, rotulo in tipo_choices %}
       <option value="{{ valor }}" {% if tipo_selecionado == valor %}selected{% endif %}>{{ rotulo }}</option>
       {% endfor %}
@@ -92,7 +93,7 @@
   <div class="registro">
     <div class="principal">
       <div class="titulo">
-        <a href="{% url 'ficha_cao' o.cao.pk %}" style="color:inherit;">{{ o.cao.nome }}</a>
+        {% if o.cao %}<a href="{% url 'ficha_cao' o.cao.pk %}" style="color:inherit;">{{ o.cao.nome }}</a>{% else %}<span>Sem cão</span>{% endif %}
         · {{ o.get_tipo_display }}
         {% if o.numero_bo %} · {{ o.numero_bo }}{% endif %}
         {% if o.prefixo_viatura %} · Vtr {{ o.prefixo_viatura }}{% endif %}
@@ -105,6 +106,6 @@
       <a class="link-acao perigo" href="{% url 'ocorrencia_excluir' o.pk %}">Excluir</a>
     </div>
   </div>
-  {% empty %}<div class="vazio">Nenhuma ocorrência encontrada. Clique em "+ Nova ocorrência" para lançar a primeira (F01, J09 ou G01).</div>{% endfor %}
+  {% empty %}<div class="vazio">Nenhuma ocorrência encontrada. Clique em "+ Nova ocorrência" para lançar a primeira (F01, J09, G01 ou E07).</div>{% endfor %}
 </div>
 {% endblock %}

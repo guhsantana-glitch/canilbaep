@@ -366,6 +366,7 @@ class OcorrenciaPolicial(models.Model):
         F01 = "F01", "F01 — Tráfico de drogas"
         J09 = "J09", "J09 — Arma de fogo"
         G01 = "G01", "G01 — Captura de procurado"
+        E07 = "E07", "E07 — Apoio"
 
     class DrogaTipo(models.TextChoices):
         NA = "NA", "Não se aplica / nenhuma"
@@ -382,8 +383,15 @@ class OcorrenciaPolicial(models.Model):
         UN = "UN", "un (porções/pinos/pedras)"
 
     cao = models.ForeignKey(
-        Cao, on_delete=models.CASCADE, related_name="ocorrencias_policiais",
+        Cao, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="ocorrencias_policiais",
         verbose_name="Cão empregado",
+        help_text="Marque 'Sem cão' para ocorrências sem emprego de cão (ex: E07 Apoio)",
+    )
+    canil = models.ForeignKey(
+        "canis.Canil", on_delete=models.CASCADE, related_name="ocorrencias_policiais",
+        verbose_name="Canil", null=True, blank=True,
+        help_text="Preenchido automaticamente pelo cão ou pelo canil em operação",
     )
     data = models.DateField("Data da ocorrência")
     tipo = models.CharField("Tipo de ocorrência", max_length=3, choices=Tipo.choices)
@@ -422,8 +430,14 @@ class OcorrenciaPolicial(models.Model):
         verbose_name_plural = "Ocorrências policiais"
         ordering = ["-data", "-id"]
 
+    def save(self, *args, **kwargs):
+        if self.cao_id and not self.canil_id:
+            self.canil_id = self.cao.canil_id
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"{self.get_tipo_display()} — {self.cao.nome} ({self.data})"
+        cao = self.cao.nome if self.cao_id else "sem cão"
+        return f"{self.get_tipo_display()} — {cao} ({self.data})"
 
     @property
     def resumo_apreensao(self):

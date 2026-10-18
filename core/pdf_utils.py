@@ -484,7 +484,7 @@ def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, tota
     """Relatório premium de produtividade mensal das ocorrências K-9 (A4).
 
     - `totais`: dict com total_ocorrencias, total_armas, total_procurados
-    - `por_tipo`: dict {F01: n, J09: n, G01: n}
+    - `por_tipo`: dict {F01: n, J09: n, G01: n, E07: n}
     - `drogas`: lista de dicts {droga_tipo_display, total_g, total_un, resumo}
       (quantidades já convertidas para gramas pelas views)
     """
@@ -564,38 +564,27 @@ def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, tota
     story.append(Spacer(1, 10))
 
     # Faixa de KPIs
-    def kpi(numero, rotulo):
-        return [Paragraph(f"<b>{numero}</b>", kpi_num), Paragraph(rotulo.upper(), kpi_rot)]
-
-    kpis = [[
-        kpi(totais.get("total_ocorrencias", 0), "ocorrências"),
-        kpi(por_tipo.get("F01", 0), "F01 tráfico"),
-        kpi(por_tipo.get("J09", 0), "J09 arma"),
-        kpi(por_tipo.get("G01", 0), "G01 procurado"),
-    ], [
-        kpi(totais.get("total_armas", 0) or 0, "armas"),
-        kpi(totais.get("total_procurados", 0) or 0, "procurados"),
-        kpi(len(drogas), "tipos droga"),
-        kpi(totais.get("total_ocorrencias", 0), "lançamentos"),
-    ]]
-    # Simplifica: primeira linha com 4 KPIs principais
     faixa = Table([[
         Paragraph(f"<b>{totais.get('total_ocorrencias', 0)}</b>", kpi_num),
         Paragraph(f"<b>{por_tipo.get('F01', 0)}</b>", kpi_num),
         Paragraph(f"<b>{por_tipo.get('J09', 0)}</b>", kpi_num),
         Paragraph(f"<b>{por_tipo.get('G01', 0)}</b>", kpi_num),
+        Paragraph(f"<b>{por_tipo.get('E07', 0)}</b>", kpi_num),
     ], [
         Paragraph("OCORRÊNCIAS", kpi_rot), Paragraph("F01 TRÁFICO", kpi_rot),
         Paragraph("J09 ARMA", kpi_rot), Paragraph("G01 PROCURADO", kpi_rot),
+        Paragraph("E07 APOIO", kpi_rot),
     ], [
         Paragraph(f"<b>{totais.get('total_armas', 0) or 0}</b>", kpi_num),
         Paragraph(f"<b>{totais.get('total_procurados', 0) or 0}</b>", kpi_num),
         Paragraph(f"<b>{len(drogas)}</b>", kpi_num),
+        Paragraph(f"<b>{totais.get('total_sem_cao', 0)}</b>", kpi_num),
         Paragraph(f"<b>{totais.get('total_ocorrencias', 0)}</b>", kpi_num),
     ], [
         Paragraph("ARMAS APREEND.", kpi_rot), Paragraph("PROCURADOS", kpi_rot),
-        Paragraph("TIPOS DROGA", kpi_rot), Paragraph("LANÇAMENTOS", kpi_rot),
-    ]], colWidths=[4.2 * cm] * 4)
+        Paragraph("TIPOS DROGA", kpi_rot), Paragraph("SEM CÃO", kpi_rot),
+        Paragraph("LANÇAMENTOS", kpi_rot),
+    ]], colWidths=[3.36 * cm] * 5)
     faixa.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, -1), AZUL),
         ("ROUNDEDCORNERS", [6, 6, 6, 6]),
@@ -611,8 +600,9 @@ def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, tota
     if any(por_tipo.values()):
         story.append(Paragraph("Ocorrências por tipo no mês", secao))
         story.append(_grafico_barras(
-            ["F01 Tráfico", "J09 Arma", "G01 Procurado"],
-            [por_tipo.get("F01", 0), por_tipo.get("J09", 0), por_tipo.get("G01", 0)],
+            ["F01 Tráfico", "J09 Arma", "G01 Procurado", "E07 Apoio"],
+            [por_tipo.get("F01", 0), por_tipo.get("J09", 0), por_tipo.get("G01", 0),
+             por_tipo.get("E07", 0)],
             "Quantidade de ocorrências por tipificação",
         ))
 
@@ -668,7 +658,7 @@ def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, tota
                 detalhe.append(f"{o.qtd_procurados} procurado(s)")
             linhas.append([
                 o.data.strftime("%d/%m"),
-                o.cao.nome,
+                o.cao.nome if o.cao else "—",
                 o.get_tipo_display().split(" — ")[0],
                 o.prefixo_viatura or "-",
                 o.numero_bo or "-",
