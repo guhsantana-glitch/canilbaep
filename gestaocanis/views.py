@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 
-from canis.models import Canil, Unidade, VinculoUsuario
+from canis.models import Canil, Pelotao, Unidade, VinculoUsuario
 from canis.senhas import SENHA_PADRAO, gerar_senha_aleatoria
 from core.models import Cao
 from .forms import CanilForm, UnidadeForm
@@ -130,11 +130,69 @@ def sair_canil(request):
     return redirect("gestao_painel")
 
 
+# ---------- Pelotões (por canil) ----------
+
+@gestor_required
+def lista_pelotoes(request, canil_pk):
+    canil = get_object_or_404(Canil, pk=canil_pk)
+    pelotoes = canil.pelotoes.order_by("nome")
+    linhas = []
+    for pelotao in pelotoes:
+        linhas.append({
+            "pelotao": pelotao,
+            "condutores": pelotao.condutores.filter(ativo=True).count(),
+            "usuarios": pelotao.vinculos.filter(ativo=True).count(),
+        })
+    return render(request, "gestaocanis/lista_pelotoes.html", {"canil": canil, "linhas": linhas})
+
+
+@gestor_required
+def pelotao_form_view(request, canil_pk, pk=None):
+    canil = get_object_or_404(Canil, pk=canil_pk)
+    pelotao = get_object_or_404(Pelotao, pk=pk, canil=canil) if pk else None
+    erro = None
+    if request.method == "POST":
+        nome = request.POST.get("nome", "").strip()
+        ativo = request.POST.get("ativo") == "on"
+        if not nome:
+            erro = "Informe o nome do pelotão."
+        elif Pelotao.objects.filter(canil=canil, nome=nome).exclude(pk=pelotao.pk if pelotao else None).exists():
+            erro = "Já existe um pelotão com esse nome neste canil."
+        else:
+            if pelotao is None:
+                Pelotao.objects.create(canil=canil, nome=nome, ativo=ativo)
+                messages.success(request, f"Pelotão '{nome}' criado com sucesso.")
+            else:
+                pelotao.nome = nome
+                pelotao.ativo = ativo
+                pelotao.save()
+                messages.success(request, f"Pelotão '{nome}' atualizado.")
+            return redirect("gestao_pelotoes", canil_pk=canil.pk)
+    return render(request, "gestaocanis/pelotao_form.html", {
+        "canil": canil, "pelotao": pelotao, "erro": erro,
+    })
+
+
+@gestor_required
+def pelotao_excluir(request, canil_pk, pk):
+    canil = get_object_or_404(Canil, pk=canil_pk)
+    pelotao = get_object_or_404(Pelotao, pk=pk, canil=canil)
+    if pelotao.condutores.exists() or pelotao.vinculos.exists():
+        messages.error(request, "Não é possível excluir: há condutores ou usuários vinculados a este pelotão. Desative-o em vez disso.")
+        return redirect("gestao_pelotoes", canil_pk=canil.pk)
+    if request.method == "POST":
+        nome = pelotao.nome
+        pelotao.delete()
+        messages.success(request, f"Pelotão '{nome}' excluído.")
+        return redirect("gestao_pelotoes", canil_pk=canil.pk)
+    return render(request, "core/confirmar_exclusao.html", {"objeto": pelotao, "tipo": "pelotão"})
+
+
 # ---------- Usuários dos canis ----------
 
 @gestor_required
 def lista_usuarios_canis(request):
-    vinculos = VinculoUsuario.objects.select_related("usuario", "canil").order_by("canil__nome", "usuario__username")
+    vinculos = VinculoUsuario.objects.select_related("usuario", "canil", "pelotao").order_by("canil__nome", "usuario__username")
     return render(request, "gestaocanis/lista_usuarios.html", {"vinculos": vinculos})
 
 
@@ -143,23 +201,29 @@ def usuario_form_view(request, pk=None):
     vinculo = get_object_or_404(VinculoUsuario, pk=pk) if pk else None
     usuario = vinculo.usuario if vinculo else None
     canis = Canil.objects.filter(ativo=True).order_by("nome")
+    pelotoes = Pelotao.objects.filter(ativo=True).select_related("canil").order_by("canil__nome", "nome")
     erro = None
-    dados = {"username": "", "first_name": "", "canil_id": "", "papel": "operador", "ativo": True}
+    dados = {"username": "", "first_name": "", "canil_id": "", "papel": "operador", "ativo": True, "pelotao_id": ""}
     if vinculo:
         dados = {"username": usuario.username, "first_name": usuario.first_name,
-                 "canil_id": str(vinculo.canil_id), "papel": vinculo.papel, "ativo": vinculo.ativo}
+                 "canil_id": str(vinculo.canil_id), "papel": vinculo.papel, "ativo": vinculo.ativo,
+                 "pelotao_id": str(vinculo.pelotao_id or "")}
     if request.method == "POST":
         dados = {"username": request.POST.get("username", "").strip(),
                  "first_name": request.POST.get("first_name", "").strip(),
                  "canil_id": request.POST.get("canil", ""),
                  "papel": request.POST.get("papel", "operador"),
-                 "ativo": request.POST.get("ativo") == "on"}
+                 "ativo": request.POST.get("ativo") == "on",
+                 "pelotao_id": request.POST.get("pelotao", "")}
         senha = request.POST.get("password", "").strip()
         canil = Canil.objects.filter(pk=dados["canil_id"]).first()
+        pelotao = Pelotao.objects.filter(pk=dados["pelotao_id"], canil=canil, ativo=True).first() if canil else None
         if not dados["username"]:
             erro = "Informe um nome de usuário."
         elif not canil:
             erro = "Selecione um canil ativo."
+        elif dados["papel"] == "operador" and pelotao is None:
+            erro = "Operadores precisam de um pelotão atribuído."
         elif User.objects.filter(username=dados["username"]).exclude(pk=usuario.pk if usuario else None).exists():
             erro = "Já existe um usuário com esse nome."
         else:
@@ -171,6 +235,7 @@ def usuario_form_view(request, pk=None):
                     username=dados["username"], password=senha, first_name=dados["first_name"])
                 VinculoUsuario.objects.create(
                     usuario=usuario, canil=canil, papel=dados["papel"],
+                    pelotao=pelotao,
                     ativo=dados["ativo"], senha_temporaria=True,
                     senha_temporaria_em=timezone.now())
                 return render(request, "gestaocanis/usuario_credenciais.html", {
@@ -186,12 +251,14 @@ def usuario_form_view(request, pk=None):
                 usuario.save()
                 vinculo.canil = canil
                 vinculo.papel = dados["papel"]
+                vinculo.pelotao = pelotao if dados["papel"] == "operador" else None
                 vinculo.ativo = dados["ativo"]
                 vinculo.save()
                 messages.success(request, f"Usuário '{usuario.username}' atualizado.")
             return redirect("gestao_usuarios")
     return render(request, "gestaocanis/usuario_form.html",
-                  {"vinculo": vinculo, "usuario_obj": usuario, "canis": canis, "dados": dados, "erro": erro,
+                  {"vinculo": vinculo, "usuario_obj": usuario, "canis": canis, "pelotoes": pelotoes,
+                   "dados": dados, "erro": erro,
                    "papeis": VinculoUsuario.PAPEL_CHOICES, "senha_padrao": SENHA_PADRAO})
 
 

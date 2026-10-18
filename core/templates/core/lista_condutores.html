@@ -7,13 +7,14 @@
 <h1>Condutores</h1>
 <div class="barra-acoes"><a href="{% url 'condutor_novo' %}" class="btn">+ Novo condutor</a></div>
 <table>
-  <tr><th>Nome</th><th>Matrícula</th><th>Posto/Graduação</th><th>Telefone</th><th>Ativo</th><th></th></tr>
+  <tr><th>Nome</th><th>Matrícula</th><th>Posto/Graduação</th><th>Pelotão</th><th>Telefone</th><th>Ativo</th><th></th></tr>
   {% for c in condutores %}
   <tr>
     <td>{{ c.nome }}</td><td>{{ c.matricula }}</td><td>{{ c.posto_graduacao|default:"-" }}</td>
+    <td>{{ c.pelotao.nome|default:"-" }}</td>
     <td>{{ c.telefone|default:"-" }}</td><td>{% if c.ativo %}Sim{% else %}Não{% endif %}</td>
     <td><a href="{% url 'condutor_editar' c.pk %}">Editar</a> &middot; <a href="{% url 'condutor_excluir' c.pk %}">Excluir</a></td>
   </tr>
-  {% empty %}<tr><td colspan="6">Nenhum condutor cadastrado.</td></tr>{% endfor %}
+  {% empty %}<tr><td colspan="7">Nenhum condutor cadastrado.</td></tr>{% endfor %}
 </table>
 {% endblock %}

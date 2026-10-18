@@ -1,4 +1,5 @@
 from django import forms
+from canis.models import Pelotao
 from .models import (
     Cao, Condutor, Vacina, Medicamento, Pesagem, Treinamento, Documento,
     Veterinario, TipoVacina, Vermifugacao, Ectoparasita, OcorrenciaSaude,
@@ -25,12 +26,17 @@ class CaoForm(forms.ModelForm):
     data_nascimento = DataISOField(label="Data de nascimento", required=False)
     data_ingresso = DataISOField(label="Data de ingresso no plantel")
 
-    def __init__(self, *args, canil=None, **kwargs):
+    def __init__(self, *args, canil=None, pelotao=None, **kwargs):
+        """pelotao: None = sem restrição; instância = só condutores do pelotão;
+        False = nenhum (operador sem pelotão)."""
         super().__init__(*args, **kwargs)
         if canil is not None:
-            self.fields["condutor_atual"].queryset = (
-                Condutor.objects.filter(canil=canil).order_by("nome")
-            )
+            qs = Condutor.objects.filter(canil=canil)
+            if pelotao is False:
+                qs = qs.none()
+            elif pelotao is not None:
+                qs = qs.filter(pelotao=pelotao)
+            self.fields["condutor_atual"].queryset = qs.select_related("pelotao").order_by("nome")
 
     class Meta:
         model = Cao
@@ -44,9 +50,21 @@ class CaoForm(forms.ModelForm):
 
 
 class CondutorForm(forms.ModelForm):
+    def __init__(self, *args, canil=None, pelotao=None, **kwargs):
+        """pelotao: None = sem restrição; instância = força/select só o pelotão;
+        False = nenhum (operador sem pelotão)."""
+        super().__init__(*args, **kwargs)
+        if canil is not None:
+            qs = Pelotao.objects.filter(canil=canil, ativo=True)
+            if pelotao is False:
+                qs = qs.none()
+            elif pelotao is not None:
+                qs = qs.filter(pk=pelotao.pk)
+            self.fields["pelotao"].queryset = qs.order_by("nome")
+
     class Meta:
         model = Condutor
-        fields = ["nome", "matricula", "posto_graduacao", "telefone", "ativo", "observacoes"]
+        fields = ["nome", "matricula", "posto_graduacao", "pelotao", "telefone", "ativo", "observacoes"]
         widgets = {"observacoes": forms.Textarea(attrs={"rows": 3})}
 
 
@@ -170,11 +188,20 @@ class VisitaTecnicaForm(forms.ModelForm):
 class OcorrenciaPolicialForm(forms.ModelForm):
     data = DataISOField(label="Data da ocorrência")
 
-    def __init__(self, *args, canil=None, **kwargs):
+    def __init__(self, *args, canil=None, pelotao=None, **kwargs):
+        """pelotao: None = sem restrição; instância = só cães/condutores do pelotão;
+        False = nenhum (operador sem pelotão)."""
         super().__init__(*args, **kwargs)
         if canil is not None:
-            self.fields["cao"].queryset = Cao.objects.filter(canil=canil).order_by("nome")
-            self.fields["condutor"].queryset = Condutor.objects.filter(canil=canil).order_by("nome")
+            caes = Cao.objects.filter(canil=canil)
+            condutores = Condutor.objects.filter(canil=canil)
+            if pelotao is False:
+                caes, condutores = caes.none(), condutores.none()
+            elif pelotao is not None:
+                caes = caes.filter(condutor_atual__pelotao=pelotao)
+                condutores = condutores.filter(pelotao=pelotao)
+            self.fields["cao"].queryset = caes.select_related("condutor_atual__pelotao").order_by("nome")
+            self.fields["condutor"].queryset = condutores.select_related("pelotao").order_by("nome")
 
     class Meta:
         model = OcorrenciaPolicial
@@ -197,10 +224,15 @@ class RelatorioMensalForm(forms.Form):
     data_inicio = DataISOField(label="De")
     data_fim = DataISOField(label="Até")
 
-    def __init__(self, *args, canil=None, **kwargs):
+    def __init__(self, *args, canil=None, pelotao=None, **kwargs):
         super().__init__(*args, **kwargs)
         if canil is not None:
-            self.fields["cao"].queryset = Cao.objects.filter(canil=canil).order_by("nome")
+            qs = Cao.objects.filter(canil=canil)
+            if pelotao is False:
+                qs = qs.none()
+            elif pelotao is not None:
+                qs = qs.filter(condutor_atual__pelotao=pelotao)
+            self.fields["cao"].queryset = qs.select_related("condutor_atual__pelotao").order_by("nome")
 
 
 class RelatorioGeralForm(forms.Form):

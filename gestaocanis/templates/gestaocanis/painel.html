@@ -31,6 +31,7 @@
     <td>{% if l.canil.ativo %}<span class="tag tag-ativo">Ativo</span>{% else %}<span class="tag tag-baixado">Inativo</span>{% endif %}</td>
     <td>
       <a href="{% url 'gestao_canil_acessar' l.canil.pk %}">Acessar</a> &middot;
+      <a href="{% url 'gestao_pelotoes' canil_pk=l.canil.pk %}">Pelotões</a> &middot;
       <a href="{% url 'gestao_canil_editar' l.canil.pk %}">Editar</a> &middot;
       <a href="{% url 'gestao_canil_excluir' l.canil.pk %}">Excluir</a>
     </td>

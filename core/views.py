@@ -125,12 +125,15 @@ def exigir_canil(view):
     return _wrapper
 
 
-def _form(FormClass, canil, *args, **kwargs):
-    """Instancia o form passando o canil quando ele suportar o filtro."""
+def _form(FormClass, canil, *args, pelotao=None, **kwargs):
+    """Instancia o form passando canil e/ou pelotão quando suportados."""
     try:
-        return FormClass(*args, canil=canil, **kwargs)
+        return FormClass(*args, canil=canil, pelotao=pelotao, **kwargs)
     except TypeError:
-        return FormClass(*args, **kwargs)
+        try:
+            return FormClass(*args, canil=canil, **kwargs)
+        except TypeError:
+            return FormClass(*args, **kwargs)
 
 
 def _qs(model, request):
@@ -138,7 +141,59 @@ def _qs(model, request):
     return model.objects.filter(canil=request.canil_escopo)
 
 
+def _escopo_pelotao(request):
+    """Restrição por pelotão do usuário.
+
+    None  → sem restrição (superusuário ou administrador do canil)
+    Pelotao → restrito a esse pelotão
+    False → nenhum dado visível (operador sem pelotão atribuído)
+    """
+    user = request.user
+    if user.is_superuser:
+        return None
+    vinculo = getattr(user, "vinculo_canil", None)
+    if vinculo is None or vinculo.papel == "admin_canil":
+        return None
+    if vinculo.pelotao_id is None:
+        return False
+    return vinculo.pelotao
+
+
+def _q_pelotao(request, prefix=""):
+    """Filtro Q de restrição por pelotão para querysets de cães.
+
+    prefix: caminho até o cão em querysets de objetos vinculados
+    (ex.: prefix="cao__" para ocorrências policiais).
+    """
+    escopo = _escopo_pelotao(request)
+    if escopo is None:
+        return Q()
+    if escopo is False:
+        return Q(pk__in=[])
+    return Q(**{f"{prefix}condutor_atual__pelotao_id": escopo.pk})
+
+
+def _q_condutor_pelotao(request):
+    """Filtro Q de restrição por pelotão para querysets de condutores."""
+    escopo = _escopo_pelotao(request)
+    if escopo is None:
+        return Q()
+    if escopo is False:
+        return Q(pk__in=[])
+    return Q(pelotao_id=escopo.pk)
+
+
+def _sem_pelotao(request):
+    """True quando é operador sem pelotão atribuído (para avisos na UI)."""
+    return _escopo_pelotao(request) is False
+
+
 def _get(model, request, pk, **kwargs):
+    if model is Cao:
+        return get_object_or_404(
+            Cao.objects.filter(_q_pelotao(request)),
+            pk=pk, canil=request.canil_escopo, **kwargs,
+        )
     return get_object_or_404(model, pk=pk, canil=request.canil_escopo, **kwargs)
 
 
@@ -146,7 +201,11 @@ def _get(model, request, pk, **kwargs):
 
 @exigir_canil
 def lista_caes(request):
-    caes = Cao.objects.select_related("condutor_atual").filter(canil=request.canil_escopo)
+    caes = Cao.objects.select_related("condutor_atual__pelotao").filter(
+        canil=request.canil_escopo
+    ).filter(_q_pelotao(request))
+    if _sem_pelotao(request):
+        messages.warning(request, "Seu usuário não possui pelotão atribuído. Contate o administrador do canil.")
     status = request.GET.get("status")
     busca = request.GET.get("q")
     if status:
@@ -195,7 +254,8 @@ def cao_form_view(request, pk=None):
     canil = request.canil_escopo
     cao = _get(Cao, request, pk) if pk else None
     if request.method == "POST":
-        form = _form(CaoForm, canil, request.POST, request.FILES, instance=cao)
+        form = _form(CaoForm, canil, request.POST, request.FILES, instance=cao,
+                     pelotao=_escopo_pelotao(request))
         if form.is_valid():
             cao = form.save(commit=False)
             cao.canil = canil
@@ -203,7 +263,7 @@ def cao_form_view(request, pk=None):
             messages.success(request, f"Cão '{cao.nome}' salvo com sucesso.")
             return redirect("ficha_cao", pk=cao.pk)
     else:
-        form = _form(CaoForm, canil, instance=cao)
+        form = _form(CaoForm, canil, instance=cao, pelotao=_escopo_pelotao(request))
     return render(request, "core/cao_form.html", {"form": form, "cao": cao})
 
 
@@ -371,10 +431,13 @@ def lista_ocorrencias(request):
     ]
 
     canil = request.canil_escopo
+    if _sem_pelotao(request):
+        messages.warning(request, "Seu usuário não possui pelotão atribuído. Contate o administrador do canil.")
     ocorrencias = (
         OcorrenciaPolicial.objects
         .select_related("cao", "condutor")
         .filter(cao__canil=canil)
+        .filter(_q_pelotao(request, prefix="cao__"))
     )
     tipo = request.GET.get("tipo")
     busca = request.GET.get("q", "").strip()
@@ -405,11 +468,11 @@ def lista_ocorrencias(request):
     cao_id = request.GET.get("cao", "").strip()
     prod_qs = OcorrenciaPolicial.objects.select_related("cao", "condutor").filter(
         cao__canil=canil, data__year=ano, data__month=mes,
-    )
+    ).filter(_q_pelotao(request, prefix="cao__"))
     cao_prod = None
     if cao_id:
         try:
-            cao_prod = Cao.objects.get(pk=int(cao_id), canil=canil)
+            cao_prod = Cao.objects.filter(_q_pelotao(request)).get(pk=int(cao_id), canil=canil)
             prod_qs = prod_qs.filter(cao=cao_prod)
         except (ValueError, Cao.DoesNotExist):
             cao_id = ""
@@ -451,7 +514,7 @@ def lista_ocorrencias(request):
         "busca": busca,
         "totais": totais,
         # produtividade
-        "caes": Cao.objects.filter(canil=canil).order_by("nome"),
+        "caes": Cao.objects.filter(canil=canil).filter(_q_pelotao(request)).select_related("condutor_atual__pelotao").order_by("nome"),
         "mes": mes, "ano": ano, "meses": meses, "anos_disponiveis": anos_disponiveis,
         "cao_prod_id": cao_id, "cao_prod": cao_prod,
         "prod_ocorrencias": prod_qs[:200],
@@ -474,10 +537,12 @@ def produtividade_mensal_pdf(request):
     cao_id = request.GET.get("cao", "").strip()
     qs = OcorrenciaPolicial.objects.select_related("cao", "condutor").filter(
         cao__canil=canil, data__year=ano, data__month=mes,
-    )
+    ).filter(_q_pelotao(request, prefix="cao__"))
     cao_nome = "Todos os cães"
     if cao_id:
-        cao_obj = get_object_or_404(Cao, pk=cao_id, canil=canil)
+        cao_obj = get_object_or_404(
+            Cao.objects.filter(_q_pelotao(request)), pk=cao_id, canil=canil
+        )
         qs = qs.filter(cao=cao_obj)
         cao_nome = cao_obj.nome
     qs = qs.order_by("data", "id")
@@ -516,11 +581,15 @@ def ocorrencia_policial_form_view(request, pk=None, cao_pk=None):
         if cao_fixo:
             instancia = get_object_or_404(OcorrenciaPolicial, pk=pk, cao=cao_fixo)
         else:
-            instancia = get_object_or_404(OcorrenciaPolicial, pk=pk, cao__canil=canil)
+            instancia = get_object_or_404(
+                OcorrenciaPolicial.objects.filter(_q_pelotao(request, prefix="cao__")),
+                pk=pk, cao__canil=canil,
+            )
     else:
         instancia = None
     if request.method == "POST":
-        form = _form(OcorrenciaPolicialForm, canil, request.POST, instance=instancia)
+        form = _form(OcorrenciaPolicialForm, canil, request.POST, instance=instancia,
+                     pelotao=_escopo_pelotao(request))
         if form.is_valid():
             obj = form.save(commit=False)
             if cao_fixo:
@@ -529,6 +598,10 @@ def ocorrencia_policial_form_view(request, pk=None, cao_pk=None):
             if obj.cao.canil_id != canil.pk:
                 messages.error(request, "Cão de outro canil.")
                 return redirect("lista_ocorrencias")
+            # Segurança por pelotão: o cão precisa estar no escopo do usuário
+            if not Cao.objects.filter(_q_pelotao(request)).filter(pk=obj.cao_id, canil=canil).exists():
+                messages.error(request, "Cão de outro pelotão.")
+                return redirect("lista_ocorrencias")
             obj.save()
             messages.success(request, "Ocorrência salva com sucesso.")
             if cao_fixo:
@@ -536,7 +609,8 @@ def ocorrencia_policial_form_view(request, pk=None, cao_pk=None):
             return redirect("lista_ocorrencias")
     else:
         inicial = {"cao": cao_fixo} if cao_fixo and instancia is None else None
-        form = _form(OcorrenciaPolicialForm, canil, instance=instancia, initial=inicial)
+        form = _form(OcorrenciaPolicialForm, canil, instance=instancia, initial=inicial,
+                     pelotao=_escopo_pelotao(request))
     return render(request, "core/ocorrencia_form.html", {
         "form": form, "cao": cao_fixo or (instancia.cao if instancia else None),
         "editando": instancia is not None,
@@ -551,7 +625,10 @@ def ocorrencia_policial_excluir(request, pk, cao_pk=None):
         obj = get_object_or_404(OcorrenciaPolicial, pk=pk, cao=cao)
         destino = ("ficha_cao", cao.pk)
     else:
-        obj = get_object_or_404(OcorrenciaPolicial, pk=pk, cao__canil=canil)
+        obj = get_object_or_404(
+            OcorrenciaPolicial.objects.filter(_q_pelotao(request, prefix="cao__")),
+            pk=pk, cao__canil=canil,
+        )
         destino = ("lista_ocorrencias", None)
     if request.method == "POST":
         obj.delete()
@@ -566,7 +643,7 @@ def ocorrencia_policial_excluir(request, pk, cao_pk=None):
 
 @exigir_canil
 def lista_condutores(request):
-    condutores = _qs(Condutor, request)
+    condutores = _qs(Condutor, request).select_related("pelotao").filter(_q_condutor_pelotao(request))
     return render(request, "core/lista_condutores.html", {"condutores": condutores})
 
 
@@ -574,15 +651,20 @@ def lista_condutores(request):
 def condutor_form_view(request, pk=None):
     condutor = _get(Condutor, request, pk) if pk else None
     if request.method == "POST":
-        form = CondutorForm(request.POST, instance=condutor)
+        form = _form(CondutorForm, request.canil_escopo, request.POST, instance=condutor,
+                     pelotao=_escopo_pelotao(request))
         if form.is_valid():
             condutor = form.save(commit=False)
             condutor.canil = request.canil_escopo
+            escopo = _escopo_pelotao(request)
+            if escopo is not None and escopo is not False:
+                condutor.pelotao = escopo
             condutor.save()
             messages.success(request, "Condutor salvo com sucesso.")
             return redirect("lista_condutores")
     else:
-        form = CondutorForm(instance=condutor)
+        form = _form(CondutorForm, request.canil_escopo, instance=condutor,
+                     pelotao=_escopo_pelotao(request))
     return render(request, "core/condutor_form.html", {"form": form, "condutor": condutor})
 
 
@@ -676,11 +758,11 @@ def relatorio_mensal(request):
     canil = request.canil_escopo
     resultado = None
     if request.method == "POST":
-        form = _form(RelatorioMensalForm, canil, request.POST)
+        form = _form(RelatorioMensalForm, canil, request.POST, pelotao=_escopo_pelotao(request))
         if form.is_valid():
             cao = form.cleaned_data["cao"]
-            if cao.canil_id != canil.pk:
-                messages.error(request, "Cão de outro canil.")
+            if cao.canil_id != canil.pk or not Cao.objects.filter(_q_pelotao(request)).filter(pk=cao.pk).exists():
+                messages.error(request, "Cão de outro canil ou pelotão.")
                 return redirect("relatorio_mensal")
             di = form.cleaned_data["data_inicio"]
             df = form.cleaned_data["data_fim"]
@@ -691,19 +773,19 @@ def relatorio_mensal(request):
                 "medicamentos": cao.medicamentos.filter(data_inicio__range=(di, df)),
             }
     else:
-        form = _form(RelatorioMensalForm, canil)
+        form = _form(RelatorioMensalForm, canil, pelotao=_escopo_pelotao(request))
     return render(request, "core/relatorio_mensal.html", {"form": form, "resultado": resultado})
 
 
 @exigir_canil
 def relatorio_mensal_pdf(request):
     canil = request.canil_escopo
-    form = _form(RelatorioMensalForm, canil, request.GET)
+    form = _form(RelatorioMensalForm, canil, request.GET, pelotao=_escopo_pelotao(request))
     if not form.is_valid():
         return redirect("relatorio_mensal")
     cao = form.cleaned_data["cao"]
-    if cao.canil_id != canil.pk:
-        messages.error(request, "Cão de outro canil.")
+    if cao.canil_id != canil.pk or not Cao.objects.filter(_q_pelotao(request)).filter(pk=cao.pk).exists():
+        messages.error(request, "Cão de outro canil ou pelotão.")
         return redirect("relatorio_mensal")
     di = form.cleaned_data["data_inicio"]
     df = form.cleaned_data["data_fim"]
@@ -718,8 +800,11 @@ def relatorio_mensal_pdf(request):
     return resp
 
 
-def _montar_linhas_relatorio_geral(canil, di, df, apenas_ativos):
-    caes = Cao.objects.select_related("condutor_atual").filter(canil=canil)
+def _montar_linhas_relatorio_geral(request, di, df, apenas_ativos):
+    canil = request.canil_escopo
+    caes = Cao.objects.select_related("condutor_atual__pelotao").filter(
+        canil=canil
+    ).filter(_q_pelotao(request))
     if apenas_ativos:
         caes = caes.filter(status=Cao.Status.ATIVO)
     linhas = []
@@ -749,7 +834,7 @@ def relatorio_geral(request):
             apenas_ativos = form.cleaned_data["apenas_ativos"]
             resultado = {
                 "data_inicio": di, "data_fim": df, "apenas_ativos": apenas_ativos,
-                "linhas": _montar_linhas_relatorio_geral(canil, di, df, apenas_ativos),
+                "linhas": _montar_linhas_relatorio_geral(request, di, df, apenas_ativos),
             }
     else:
         form = RelatorioGeralForm(initial={"apenas_ativos": True})
@@ -765,7 +850,7 @@ def relatorio_geral_pdf(request):
     di = form.cleaned_data["data_inicio"]
     df = form.cleaned_data["data_fim"]
     apenas_ativos = form.cleaned_data["apenas_ativos"]
-    linhas = _montar_linhas_relatorio_geral(canil, di, df, apenas_ativos)
+    linhas = _montar_linhas_relatorio_geral(request, di, df, apenas_ativos)
     buffer = gerar_relatorio_geral_mensal(di, df, linhas, apenas_ativos)
     resp = HttpResponse(buffer, content_type="application/pdf")
     resp["Content-Disposition"] = f'inline; filename="relatorio_geral_{di}_{df}.pdf"'

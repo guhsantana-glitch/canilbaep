@@ -26,9 +26,23 @@
   </div>
   <div class="form-linha">
     <label>Papel</label>
-    <select name="papel">
+    <select name="papel" id="sel-papel">
       {% for valor, rotulo in papeis %}
       <option value="{{ valor }}" {% if dados.papel == valor %}selected{% endif %}>{{ rotulo }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="form-linha">
+    <label>Pelotão <span style="color:#666;font-size:0.8rem;">(obrigatório para operadores)</span></label>
+    <select name="pelotao" id="sel-pelotao">
+      <option value="">Sem pelotão</option>
+      {% regroup pelotoes by canil as pelotoes_por_canil %}
+      {% for grupo in pelotoes_por_canil %}
+      <optgroup label="{{ grupo.grouper.nome }}" data-canil="{{ grupo.grouper.pk }}">
+        {% for p in grupo.list %}
+        <option value="{{ p.pk }}" data-canil="{{ p.canil.pk }}" {% if dados.pelotao_id == p.pk|stringformat:"s" %}selected{% endif %}>{{ p.nome }}</option>
+        {% endfor %}
+      </optgroup>
       {% endfor %}
     </select>
   </div>
@@ -44,4 +58,26 @@
   <button class="btn" type="submit">Salvar</button>
   <a href="{% url 'gestao_usuarios' %}" class="btn btn-secundario">Cancelar</a>
 </form>
+<script>
+(function () {
+  const selCanil = document.querySelector('select[name="canil"]');
+  const selPelotao = document.getElementById('sel-pelotao');
+  if (!selCanil || !selPelotao) return;
+  function filtrar() {
+    const canil = selCanil.value;
+    let selecionadoVisivel = false;
+    selPelotao.querySelectorAll('option[data-canil]').forEach(function (opt) {
+      const visivel = opt.dataset.canil === canil;
+      opt.hidden = !visivel;
+      if (visivel && opt.selected) selecionadoVisivel = true;
+    });
+    selPelotao.querySelectorAll('optgroup').forEach(function (grp) {
+      grp.hidden = grp.dataset.canil !== canil;
+    });
+    if (!selecionadoVisivel) selPelotao.value = '';
+  }
+  selCanil.addEventListener('change', filtrar);
+  filtrar();
+})();
+</script>
 {% endblock %}

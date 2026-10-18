@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'gestao_painel' %}" class="btn btn-secundario">← Voltar</a>
+</div>
+<span class="eyebrow">Gestão geral — {{ canil.nome }}</span>
+<h1>Pelotões</h1>
+<div class="barra-acoes"><a href="{% url 'gestao_pelotao_novo' canil_pk=canil.pk %}" class="btn">+ Novo pelotão</a></div>
+<table>
+  <tr><th>Pelotão</th><th>Condutores</th><th>Usuários</th><th>Situação</th><th></th></tr>
+  {% for l in linhas %}
+  <tr>
+    <td><b>{{ l.pelotao.nome }}</b></td>
+    <td>{{ l.condutores }}</td>
+    <td>{{ l.usuarios }}</td>
+    <td>{% if l.pelotao.ativo %}<span class="tag tag-ativo">Ativo</span>{% else %}<span class="tag tag-baixado">Inativo</span>{% endif %}</td>
+    <td>
+      <a href="{% url 'gestao_pelotao_editar' canil_pk=canil.pk pk=l.pelotao.pk %}">Editar</a> &middot;
+      <a href="{% url 'gestao_pelotao_excluir' canil_pk=canil.pk pk=l.pelotao.pk %}">Excluir</a>
+    </td>
+  </tr>
+  {% empty %}<tr><td colspan="5">Nenhum pelotão cadastrado neste canil.</td></tr>{% endfor %}
+</table>
+{% endblock %}

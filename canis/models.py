@@ -63,6 +63,38 @@ class Canil(models.Model):
         return self.vinculos.filter(ativo=True).count()
 
 
+class Pelotao(models.Model):
+    """Pelotão dentro de um canil (ex: 1º Pelotão, 2º Pelotão).
+
+    Usuários operadores só enxergam cães e ocorrências do seu pelotão.
+    O pelotão de um cão é derivado do seu condutor atual.
+    """
+
+    canil = models.ForeignKey(
+        Canil, on_delete=models.CASCADE, related_name="pelotoes",
+        verbose_name="Canil",
+    )
+    nome = models.CharField("Nome do pelotão (ex: 1º Pelotão)", max_length=80)
+    ativo = models.BooleanField(
+        "Ativo", default=True,
+        help_text="Pelotão desativado não pode ser selecionado em novos cadastros.",
+    )
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Pelotão"
+        verbose_name_plural = "Pelotões"
+        ordering = ["nome"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["canil", "nome"], name="uniq_pelotao_canil_nome"
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.nome} ({self.canil.nome})"
+
+
 class VinculoUsuario(models.Model):
     """Liga um usuário do sistema a um canil (cada usuário opera 1 canil).
 
@@ -82,6 +114,12 @@ class VinculoUsuario(models.Model):
         Canil, on_delete=models.CASCADE, related_name="vinculos"
     )
     papel = models.CharField("Papel", max_length=20, choices=PAPEL_CHOICES, default="operador")
+    pelotao = models.ForeignKey(
+        Pelotao, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="vinculos", verbose_name="Pelotão",
+        help_text="Operadores só enxergam cães e ocorrências do seu pelotão. "
+                  "Administradores do canil veem todos.",
+    )
     ativo = models.BooleanField("Ativo", default=True)
     senha_temporaria = models.BooleanField(
         "Precisa trocar a senha no próximo login", default=False,

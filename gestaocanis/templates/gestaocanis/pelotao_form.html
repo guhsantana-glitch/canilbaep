@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="barra-acoes" style="margin-top:0;margin-bottom:0.6rem;">
+  <a href="{% url 'gestao_pelotoes' canil_pk=canil.pk %}" class="btn btn-secundario">← Voltar</a>
+</div>
+<span class="eyebrow">{{ canil.nome }}</span>
+<h1>{% if pelotao %}Editar pelotão: {{ pelotao.nome }}{% else %}Novo pelotão{% endif %}</h1>
+<form method="post" class="card">
+  {% csrf_token %}
+  <div class="form-linha">
+    <label>Nome do pelotão (ex: 1º Pelotão)</label>
+    <input type="text" name="nome" value="{{ pelotao.nome|default:'' }}" required maxlength="80">
+  </div>
+  <div class="form-linha">
+    <label><input type="checkbox" name="ativo" style="width:auto;display:inline-block;" {% if pelotao is None or pelotao.ativo %}checked{% endif %}> Pelotão ativo</label>
+  </div>
+  {% if erro %}<p style="color:#8a3324;font-size:0.85rem;">{{ erro }}</p>{% endif %}
+  <button class="btn" type="submit">Salvar</button>
+  <a href="{% url 'gestao_pelotoes' canil_pk=canil.pk %}" class="btn btn-secundario">Cancelar</a>
+</form>
+{% endblock %}

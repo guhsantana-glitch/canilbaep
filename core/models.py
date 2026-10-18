@@ -57,6 +57,11 @@ class Condutor(models.Model):
     nome = models.CharField("Nome completo", max_length=150)
     matricula = models.CharField("Matrícula", max_length=30, unique=True)
     posto_graduacao = models.CharField("Posto/Graduação", max_length=60, blank=True)
+    pelotao = models.ForeignKey(
+        "canis.Pelotao", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="condutores", verbose_name="Pelotão",
+        help_text="Define o pelotão dos cães conduzidos por este condutor.",
+    )
     telefone = models.CharField("Telefone", max_length=20, blank=True)
     ativo = models.BooleanField("Ativo", default=True)
     usuario = models.OneToOneField(
