@@ -485,9 +485,13 @@ def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, tota
 
     - `totais`: dict com total_ocorrencias, total_armas, total_procurados
     - `por_tipo`: dict {F01: n, J09: n, G01: n}
-    - `drogas`: lista de dicts {droga_tipo, droga_unidade, total_qtd}
+    - `drogas`: lista de dicts {droga_tipo_display, total_g, total_un, resumo}
+      (quantidades já convertidas para gramas pelas views)
     """
     from datetime import date
+    from decimal import Decimal
+    from reportlab.graphics.charts.barcharts import VerticalBarChart
+    from reportlab.graphics.shapes import Drawing, String
 
     MESES_PT = [
         "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
@@ -523,6 +527,30 @@ def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, tota
                             alignment=TA_CENTER, textColor=colors.HexColor("#888888"))
 
     nome_mes = MESES_PT[mes - 1] if 1 <= mes <= 12 else str(mes)
+
+    def _grafico_barras(categorias, valores, rotulo, fmt="%d"):
+        """Gráfico de barras vertical estilizado com a paleta do relatório."""
+        largura, altura = 16.5 * cm, 5.4 * cm
+        desenho = Drawing(largura, altura)
+        bc = VerticalBarChart()
+        bc.x = 1.8 * cm
+        bc.y = 1.1 * cm
+        bc.width = largura - 2.6 * cm
+        bc.height = altura - 2.4 * cm
+        bc.data = [valores]
+        bc.categoryAxis.categoryNames = categorias
+        bc.categoryAxis.labels.fontSize = 8
+        bc.valueAxis.valueMin = 0
+        bc.valueAxis.labels.fontSize = 7
+        bc.bars[0].fillColor = CIANO
+        bc.bars[0].strokeColor = AZUL
+        bc.barLabelFormat = fmt
+        bc.barLabels.fontSize = 7
+        bc.barLabels.dy = 6
+        desenho.add(bc)
+        desenho.add(String(largura / 2, altura - 10, rotulo, textAnchor="middle",
+                           fontSize=9, fillColor=AZUL))
+        return desenho
 
     story = []
     _cabecalho_com_logo(story)
@@ -579,6 +607,15 @@ def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, tota
     story.append(faixa)
     story.append(Spacer(1, 6))
 
+    # Gráfico de ocorrências por tipo
+    if any(por_tipo.values()):
+        story.append(Paragraph("Ocorrências por tipo no mês", secao))
+        story.append(_grafico_barras(
+            ["F01 Tráfico", "J09 Arma", "G01 Procurado"],
+            [por_tipo.get("F01", 0), por_tipo.get("J09", 0), por_tipo.get("G01", 0)],
+            "Quantidade de ocorrências por tipificação",
+        ))
+
     def tabela_padrao(cabecalho, linhas, larguras):
         dados = [[Paragraph(f"<b>{c}</b>", cab) for c in cabecalho]]
         for linha in linhas:
@@ -600,10 +637,20 @@ def gerar_produtividade_mensal(canil_nome, mes, ano, cao_nome, ocorrencias, tota
     story.append(Paragraph("Drogas apreendidas no mês", secao))
     if drogas:
         story.append(tabela_padrao(
-            ["Tipo de droga", "Quantidade", "Unidade"],
-            [[d["droga_tipo_display"], str(d["total_qtd"]).replace(".", ","), d["droga_unidade_display"]] for d in drogas],
-            [7 * cm, 5 * cm, 5 * cm],
+            ["Tipo de droga", "Quantidade (convertida)"],
+            [[d["droga_tipo_display"], d["resumo"]] for d in drogas],
+            [7 * cm, 10 * cm],
         ))
+        # Gráfico de drogas por tipo (gramas convertidas)
+        com_massa = [d for d in drogas if d.get("total_g")]
+        if com_massa:
+            story.append(Spacer(1, 6))
+            story.append(_grafico_barras(
+                [d["droga_tipo_display"] for d in com_massa],
+                [float(Decimal(d["total_g"])) for d in com_massa],
+                "Drogas apreendidas por tipo (gramas, KG convertido)",
+                fmt="%.0f",
+            ))
     else:
         story.append(Paragraph("Sem apreensão de drogas no período.", styles["Normal"]))
 

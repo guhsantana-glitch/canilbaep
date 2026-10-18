@@ -50,8 +50,8 @@
     <a class="btn" target="_blank" href="{% url 'produtividade_pdf' %}?mes={{ mes }}&ano={{ ano }}{% if cao_prod_id %}&cao={{ cao_prod_id }}{% endif %}">Gerar PDF premium</a>
   </form>
   {% if prod_drogas %}
-  <div style="font-size:.85rem;color:var(--texto-suave);margin-bottom:.4rem;"><b>Drogas no mês:</b>
-    {% for d in prod_drogas %}{{ d.droga_tipo_display }} {{ d.total_qtd }} {{ d.droga_unidade_display }}{% if not forloop.last %} · {% endif %}{% endfor %}
+  <div style="font-size:.85rem;color:var(--texto-suave);margin-bottom:.4rem;"><b>Drogas no mês (convertidas):</b>
+    {% for d in prod_drogas %}{{ d.droga_tipo_display }}: {{ d.resumo }}{% if not forloop.last %} · {% endif %}{% endfor %}
   </div>
   {% endif %}
   <div class="lista-registros">

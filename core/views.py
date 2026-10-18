@@ -184,6 +184,67 @@ def _q_condutor_pelotao(request):
     return Q(pelotao_id=escopo.pk)
 
 
+def _fmt_qtd(v):
+    """Formata quantidade em estilo pt-BR (vírgula decimal, sem zeros à direita)."""
+    from decimal import Decimal
+    s = format(Decimal(v).normalize(), "f")
+    if "." in s:
+        s = s.rstrip("0").rstrip(".")
+    return s.replace(".", ",")
+
+
+def _drogas_convertidas(qs):
+    """Agrega as drogas das ocorrências convertendo as unidades para gramas.
+
+    KG é multiplicado por 1000; G entra como está; UN (porções/pinos/pedras)
+    não tem massa padrão e é contada separadamente.
+    """
+    from decimal import Decimal
+    from django.db.models import Case, DecimalField, F, Sum, Value, When
+
+    linhas = (
+        qs.exclude(droga_tipo="NA")
+        .exclude(droga_quantidade__isnull=True)
+        .annotate(
+            qtd_g=Case(
+                When(droga_unidade="KG", then=F("droga_quantidade") * Value(1000)),
+                When(droga_unidade="G", then=F("droga_quantidade")),
+                default=Value(0),
+                output_field=DecimalField(max_digits=13, decimal_places=3),
+            ),
+            qtd_un=Case(
+                When(droga_unidade="UN", then=F("droga_quantidade")),
+                default=Value(0),
+                output_field=DecimalField(max_digits=13, decimal_places=3),
+            ),
+        )
+        .values("droga_tipo")
+        .annotate(total_g=Sum("qtd_g"), total_un=Sum("qtd_un"))
+        .order_by("droga_tipo")
+    )
+    drogas = []
+    for d in linhas:
+        total_g = d["total_g"] or 0
+        total_un = d["total_un"] or 0
+        if not total_g and not total_un:
+            continue
+        partes = []
+        if total_g:
+            partes.append(f"{_fmt_qtd(total_g)} g")
+            if total_g >= 1000:
+                partes.append(f"({_fmt_qtd(Decimal(total_g) / 1000)} kg)")
+        if total_un:
+            partes.append(f"+ {_fmt_qtd(total_un)} un")
+        drogas.append({
+            "droga_tipo": d["droga_tipo"],
+            "droga_tipo_display": dict(OcorrenciaPolicial.DrogaTipo.choices).get(d["droga_tipo"], d["droga_tipo"]),
+            "total_g": total_g,
+            "total_un": total_un,
+            "resumo": " ".join(partes),
+        })
+    return drogas
+
+
 def _sem_pelotao(request):
     """True quando é operador sem pelotão atribuído (para avisos na UI)."""
     return _escopo_pelotao(request) is False
@@ -497,21 +558,7 @@ def lista_ocorrencias(request):
     por_tipo = {"F01": 0, "J09": 0, "G01": 0}
     for linha in por_tipo_qs:
         por_tipo[linha["tipo"]] = linha["n"]
-    drogas_qs = (
-        prod_qs.exclude(droga_tipo="NA").exclude(droga_quantidade__isnull=True)
-        .values("droga_tipo", "droga_unidade").annotate(total_qtd=Sum("droga_quantidade"))
-        .order_by("droga_tipo")
-    )
-    drogas = [
-        {
-            "droga_tipo": d["droga_tipo"],
-            "droga_tipo_display": dict(OcorrenciaPolicial.DrogaTipo.choices).get(d["droga_tipo"], d["droga_tipo"]),
-            "droga_unidade": d["droga_unidade"],
-            "droga_unidade_display": dict(OcorrenciaPolicial.DrogaUnidade.choices).get(d["droga_unidade"], d["droga_unidade"]),
-            "total_qtd": d["total_qtd"],
-        }
-        for d in drogas_qs
-    ]
+    drogas = _drogas_convertidas(prod_qs)
     anos_disponiveis = list(range(hoje.year - 5, hoje.year + 2))
     meses = [(i, MESES_PT[i - 1]) for i in range(1, 13)]
 
@@ -560,17 +607,7 @@ def produtividade_mensal_pdf(request):
     por_tipo = {"F01": 0, "J09": 0, "G01": 0}
     for linha in qs.values("tipo").annotate(n=Count("id")):
         por_tipo[linha["tipo"]] = linha["n"]
-    drogas = [
-        {
-            "droga_tipo": d["droga_tipo"],
-            "droga_tipo_display": dict(OcorrenciaPolicial.DrogaTipo.choices).get(d["droga_tipo"], d["droga_tipo"]),
-            "droga_unidade": d["droga_unidade"],
-            "droga_unidade_display": dict(OcorrenciaPolicial.DrogaUnidade.choices).get(d["droga_unidade"], d["droga_unidade"]),
-            "total_qtd": d["total_qtd"],
-        }
-        for d in qs.exclude(droga_tipo="NA").exclude(droga_quantidade__isnull=True)
-        .values("droga_tipo", "droga_unidade").annotate(total_qtd=Sum("droga_quantidade")).order_by("droga_tipo")
-    ]
+    drogas = _drogas_convertidas(qs)
     buffer = gerar_produtividade_mensal(
         canil.nome if hasattr(canil, "nome") else str(canil),
         mes, ano, cao_nome, list(qs), totais, por_tipo, drogas,
