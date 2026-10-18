@@ -106,6 +106,12 @@ class Cao(models.Model):
         Condutor, on_delete=models.SET_NULL, null=True, blank=True,
         related_name="caes", verbose_name="Condutor atual / Adestrador"
     )
+    pelotao = models.ForeignKey(
+        "canis.Pelotao", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="caes", verbose_name="Pelotão",
+        help_text="Define a qual pelotão o cão pertence. Operadores só enxergam "
+                  "cães e ocorrências do seu pelotão.",
+    )
     box = models.CharField("Box / Baia", max_length=30, blank=True)
     foto = models.ImageField("Foto", upload_to="caes/fotos/", blank=True, null=True)
     origem = models.CharField("Origem (doação, compra, nascido no canil...)", max_length=150, blank=True)

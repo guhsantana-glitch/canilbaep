@@ -17,10 +17,11 @@
     <tr><td><b>Nascimento</b></td><td>{{ cao.data_nascimento|date:"d/m/Y"|default:"-" }}</td><td><b>Idade aprox.</b></td><td>{{ cao.idade_aproximada|default:"-" }} anos</td></tr>
     <tr><td><b>Ingresso</b></td><td>{{ cao.data_ingresso|date:"d/m/Y" }}</td><td><b>Situação</b></td><td><span class="tag tag-{{ cao.status|lower }}">{{ cao.get_status_display }}</span></td></tr>
     <tr><td><b>Box</b></td><td>{{ cao.box|default:"-" }}</td><td><b>Condutor / Adestrador</b></td><td>{{ cao.condutor_atual.nome|default:"-" }}</td></tr>
-    <tr><td><b>Microchip (CHIP)</b></td><td>{{ cao.microchip|default:"-" }}</td><td><b>Peso atual</b></td><td>{{ cao.peso_atual|default:"-" }} kg</td></tr>
-    <tr><td><b>Especialidade</b></td><td>{{ cao.especialidade|default:"-" }}</td><td><b>Nº CRO/CPR</b></td><td>{{ cao.numero_cro_cpr|default:"-" }}</td></tr>
-    <tr><td><b>Registro SBCPA</b></td><td>{{ cao.registro_sbcpa|default:"-" }}</td><td><b>Origem</b></td><td>{{ cao.origem|default:"-" }}</td></tr>
-    <tr><td><b>Patrimônio</b></td><td>{{ cao.patrimonio|default:"-" }}</td><td><b>Foto</b></td><td>{% if cao.foto %}Anexada{% else %}-{% endif %}</td></tr>
+    <tr><td><b>Pelotão</b></td><td>{{ cao.pelotao.nome|default:"-" }}</td><td><b>Peso atual</b></td><td>{{ cao.peso_atual|default:"-" }} kg</td></tr>
+    <tr><td><b>Microchip (CHIP)</b></td><td>{{ cao.microchip|default:"-" }}</td><td><b>Nº CRO/CPR</b></td><td>{{ cao.numero_cro_cpr|default:"-" }}</td></tr>
+    <tr><td><b>Especialidade</b></td><td>{{ cao.especialidade|default:"-" }}</td><td><b>Registro SBCPA</b></td><td>{{ cao.registro_sbcpa|default:"-" }}</td></tr>
+    <tr><td><b>Origem</b></td><td>{{ cao.origem|default:"-" }}</td><td><b>Patrimônio</b></td><td>{{ cao.patrimonio|default:"-" }}</td></tr>
+    <tr><td><b>Foto</b></td><td>{% if cao.foto %}Anexada{% else %}-{% endif %}</td><td></td><td></td></tr>
   </table>
   {% if cao.observacoes %}<p style="margin-top:0.8rem;"><b>Outras observações:</b> {{ cao.observacoes }}</p>{% endif %}
 </div>

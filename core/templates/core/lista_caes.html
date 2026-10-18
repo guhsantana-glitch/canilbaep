@@ -37,7 +37,7 @@
       <p>{{ cao.raca }} &middot; {{ cao.get_sexo_display }}</p>
       <p>Box: {{ cao.box|default:"-" }}</p>
       <p>Condutor: {{ cao.condutor_atual.nome|default:"-" }}</p>
-      <p>Pelotão: {{ cao.condutor_atual.pelotao.nome|default:"-" }}</p>
+      <p>Pelotão: {{ cao.pelotao.nome|default:"-" }}</p>
       <span class="tag tag-{{ cao.status|lower }}">{{ cao.get_status_display }}</span>
     </div>
   </a>

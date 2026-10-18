@@ -30,16 +30,17 @@
 
 <table>
   <tr>
-    <th>Cão</th><th>Box</th><th>Condutor</th><th>Situação</th><th>Peso atual</th>
+    <th>Cão</th><th>Box</th><th>Condutor</th><th>Pelotão</th><th>Situação</th><th>Peso atual</th>
     <th>Vacinas no período</th><th>Medicamentos no período</th><th>Treinamentos no período</th>
   </tr>
   {% for linha in resultado.linhas %}
   <tr>
     <td>{{ linha.nome }}</td><td>{{ linha.box|default:"-" }}</td><td>{{ linha.condutor|default:"-" }}</td>
+    <td>{{ linha.pelotao|default:"-" }}</td>
     <td>{{ linha.status }}</td><td>{% if linha.peso_atual %}{{ linha.peso_atual }} kg{% else %}-{% endif %}</td>
     <td>{{ linha.qtd_vacinas }}</td><td>{{ linha.qtd_medicamentos }}</td><td>{{ linha.qtd_treinamentos }}</td>
   </tr>
-  {% empty %}<tr><td colspan="8">Nenhum cão encontrado para os filtros selecionados.</td></tr>{% endfor %}
+  {% empty %}<tr><td colspan="9">Nenhum cão encontrado para os filtros selecionados.</td></tr>{% endfor %}
 </table>
 {% endif %}
 {% endblock %}
