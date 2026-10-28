@@ -365,8 +365,10 @@ class OcorrenciaPolicial(models.Model):
     class Tipo(models.TextChoices):
         F01 = "F01", "F01 — Tráfico de drogas"
         J09 = "J09", "J09 — Arma de fogo"
-        G01 = "G01", "G01 — Captura de procurado"
+        G01 = "G01", "G01 — Captura de Procurado"
         E07 = "E07", "E07 — Apoio"
+        B04 = "B04", "B04 - Roubo"
+        B01 = "B01", "B01 - Furto"
 
     class DrogaTipo(models.TextChoices):
         NA = "NA", "Não se aplica / nenhuma"
