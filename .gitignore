@@ -3,4 +3,13 @@ __pycache__/
 db.sqlite3
 /media/
 /staticfiles/
+
+# Segredos e backups de configuração — NUNCA versionar
 .env
+.env.*
+!.env.example
+settings_bkp.py
+*.sqlite3
+*.sql
+*.pem
+*.key

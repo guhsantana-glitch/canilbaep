@@ -4,7 +4,7 @@
   {% if cao %}<a href="{% url 'ficha_cao' cao.pk %}" class="btn btn-secundario">← Voltar para {{ cao.nome }}</a>
   {% else %}<a href="{% url 'lista_ocorrencias' %}" class="btn btn-secundario">← Voltar</a>{% endif %}
 </div>
-<span class="eyebrow">F01 · J09 · G01 · E07</span>
+<span class="eyebrow">F01 · J09 · G01 · E07 · B04 · B01</span>
 <h1>{% if editando %}Editar ocorrência{% else %}Nova ocorrência policial{% endif %}{% if cao %} — {{ cao.nome }}{% endif %}</h1>
 <form method="post" class="card">
   {% csrf_token %}
@@ -26,17 +26,37 @@
   var semCao = document.getElementById('id_sem_cao');
   var cao = document.getElementById('id_cao');
   var condutor = document.getElementById('id_condutor');
-  if (!semCao) return;
-  function aplicar() {
-    var desligar = semCao.checked;
-    [cao, condutor].forEach(function (el) {
-      if (!el) return;
-      el.disabled = desligar;
-      if (desligar) el.value = '';
-    });
+  if (semCao) {
+    function aplicarSemCao() {
+      var desligar = semCao.checked;
+      [cao, condutor].forEach(function (el) {
+        if (!el) return;
+        el.disabled = desligar;
+        if (desligar) el.value = '';
+      });
+    }
+    semCao.addEventListener('change', aplicarSemCao);
+    aplicarSemCao();
   }
-  semCao.addEventListener('change', aplicar);
-  aplicar();
+
+  // Mostra os campos de itens/objetos apreendidos apenas em prisão (B01)
+  var tipo = document.getElementById('id_tipo');
+  var qtdItens = document.getElementById('id_qtd_itens_apreendidos');
+  var descItens = document.getElementById('id_descricao_itens_apreendidos');
+  function linhaDe(el) { return el ? el.closest('.form-linha') : null; }
+  var linhasItens = [linhaDe(qtdItens), linhaDe(descItens)].filter(Boolean);
+  function aplicarItens() {
+    var ehPrisao = !!(tipo && tipo.value === 'B01');
+    linhasItens.forEach(function (ln) {
+      ln.style.display = ehPrisao ? '' : 'none';
+    });
+    if (!ehPrisao && qtdItens) qtdItens.value = '';
+    if (!ehPrisao && descItens) descItens.value = '';
+  }
+  if (tipo) {
+    tipo.addEventListener('change', aplicarItens);
+    aplicarItens();
+  }
 })();
 </script>
 {% endblock %}

@@ -216,7 +216,7 @@ def usuario_form_view(request, pk=None):
                  "ativo": request.POST.get("ativo") == "on",
                  "pelotao_id": request.POST.get("pelotao", "")}
         senha = request.POST.get("password", "").strip()
-        canil = Canil.objects.filter(pk=dados["canil_id"]).first()
+        canil = Canil.objects.filter(pk=dados["canil_id"], ativo=True).first()
         pelotao = Pelotao.objects.filter(pk=dados["pelotao_id"], canil=canil, ativo=True).first() if canil else None
         if not dados["username"]:
             erro = "Informe um nome de usuário."
@@ -235,12 +235,14 @@ def usuario_form_view(request, pk=None):
                     username=dados["username"], password=senha, first_name=dados["first_name"])
                 VinculoUsuario.objects.create(
                     usuario=usuario, canil=canil, papel=dados["papel"],
-                    pelotao=pelotao,
+                    pelotao=pelotao if dados["papel"] == "operador" else None,
                     ativo=dados["ativo"], senha_temporaria=True,
                     senha_temporaria_em=timezone.now())
-                return render(request, "gestaocanis/usuario_credenciais.html", {
+                resp = render(request, "gestaocanis/usuario_credenciais.html", {
                     "usuario": usuario, "canil": canil, "senha": senha, "novo": True,
                 })
+                resp["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+                return resp
             else:
                 usuario.username = dados["username"]
                 usuario.first_name = dados["first_name"]
@@ -283,9 +285,11 @@ def usuario_resetar_senha(request, pk):
         vinculo.senha_temporaria = True
         vinculo.senha_temporaria_em = timezone.now()
         vinculo.save()
-        return render(request, "gestaocanis/usuario_credenciais.html", {
+        resp = render(request, "gestaocanis/usuario_credenciais.html", {
             "usuario": vinculo.usuario, "canil": vinculo.canil, "senha": senha, "novo": False,
         })
+        resp["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+        return resp
     return render(request, "gestaocanis/usuario_senha.html", {"vinculo": vinculo})
 
 
@@ -295,15 +299,29 @@ def atualizar_banco(request):
 
     Uso: entre como superusuário e acesse /gestao/manutencao/atualizar-banco/
     Pode remover esta rota quando o migrate passar a rodar no deploy.
+
+    Só executa em POST (nunca em GET, para não ser disparado por link
+    externo/CSRF) e escapa a saída do comando.
     """
+    if request.method != "POST":
+        return render(request, "gestaocanis/atualizar_banco.html")
+
     from django.core.management import call_command
     from django.http import HttpResponse
+    from django.utils.html import escape
     from io import StringIO
 
     saida = StringIO()
     try:
         call_command("migrate", "--no-input", stdout=saida)
         texto = saida.getvalue() or "Migrations aplicadas."
-        return HttpResponse(f"<h1>Banco atualizado</h1><pre>{texto}</pre><p><a href='/'>Voltar ao sistema</a></p>")
+        corpo = f"<h1>Banco atualizado</h1><pre>{escape(texto)}</pre>"
+        status = 200
     except Exception as exc:  # noqa: BLE001
-        return HttpResponse(f"<h1>Falha ao migrar</h1><pre>{exc}</pre>", status=500)
+        corpo = f"<h1>Falha ao migrar</h1><pre>{escape(str(exc))}</pre>"
+        status = 500
+    resposta = HttpResponse(
+        f"{corpo}<p><a href='/'>Voltar ao sistema</a></p>", status=status
+    )
+    resposta["Cache-Control"] = "no-store"
+    return resposta

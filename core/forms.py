@@ -235,7 +235,8 @@ class OcorrenciaPolicialForm(forms.ModelForm):
         fields = [
             "cao", "data", "tipo", "numero_bo", "prefixo_viatura", "local", "condutor",
             "droga_tipo", "droga_quantidade", "droga_unidade",
-            "qtd_armas", "descricao_armas", "qtd_procurados", "observacoes",
+            "qtd_armas", "descricao_armas", "qtd_procurados",
+            "qtd_itens_apreendidos", "descricao_itens_apreendidos", "observacoes",
         ]
         widgets = {
             "observacoes": forms.Textarea(attrs={"rows": 3}),
@@ -247,7 +248,8 @@ class OcorrenciaPolicialForm(forms.ModelForm):
 
 
 class RelatorioMensalForm(forms.Form):
-    cao = forms.ModelChoiceField(queryset=Cao.objects.all(), label="Cão")
+    # Queryset vazio por padrão (fail-closed): a view sempre restricts por canil
+    cao = forms.ModelChoiceField(queryset=Cao.objects.none(), label="Cão")
     data_inicio = DataISOField(label="De")
     data_fim = DataISOField(label="Até")
 

@@ -18,6 +18,8 @@
     <span class="pill pill-verde">J09 {{ prod_por_tipo.J09 }}</span>
     <span class="pill pill-verde">G01 {{ prod_por_tipo.G01 }}</span>
     <span class="pill pill-verde">E07 {{ prod_por_tipo.E07 }}</span>
+    <span class="pill pill-verde">B04 {{ prod_por_tipo.B04 }}</span>
+    <span class="pill pill-verde">B01 {{ prod_por_tipo.B01 }}</span>
     <span class="pill pill-cinza">{{ prod_totais.total_armas }} arma(s) · {{ prod_totais.total_procurados }} procurado(s)</span>
   </div>
   <form method="get" class="filtro-barra" style="margin-bottom:.6rem;">
@@ -73,7 +75,7 @@
   <div class="form-linha" style="margin:0;min-width:160px;">
     <label>Tipo</label>
     <select name="tipo" onchange="this.form.submit()">
-      <option value="">Todos (F01 / J09 / G01 / E07)</option>
+      <option value="">Todos (F01 / J09 / G01 / E07 / B04 / B01)</option>
       {% for valor, rotulo in tipo_choices %}
       <option value="{{ valor }}" {% if tipo_selecionado == valor %}selected{% endif %}>{{ rotulo }}</option>
       {% endfor %}
@@ -116,6 +118,6 @@
       <a class="link-acao perigo" href="{% url 'ocorrencia_excluir' o.pk %}">Excluir</a>
     </div>
   </div>
-  {% empty %}<div class="vazio">Nenhuma ocorrência encontrada. Clique em "+ Nova ocorrência" para lançar a primeira (F01, J09, G01 ou E07).</div>{% endfor %}
+  {% empty %}<div class="vazio">Nenhuma ocorrência encontrada. Clique em "+ Nova ocorrência" para lançar a primeira (F01, J09, G01, E07, B04 ou B01).</div>{% endfor %}
 </div>
 {% endblock %}

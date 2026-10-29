@@ -15,8 +15,11 @@ def canil_atual(request):
         canil_id = request.session.get("canil_id")
         if not canil_id:
             return None
-        return Canil.objects.filter(pk=canil_id).first()
+        # Canil desativado não é mais operável, mesmo com sessão aberta
+        return Canil.objects.filter(pk=canil_id, ativo=True).first()
     vinculo = getattr(request.user, "vinculo_canil", None)
     if vinculo is None or not vinculo.ativo:
+        return None
+    if not vinculo.canil.ativo:
         return None
     return vinculo.canil

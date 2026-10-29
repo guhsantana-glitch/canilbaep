@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.views import LoginView, LogoutView
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.urls import reverse
 from django.db.models import Q
 from django.utils import timezone
@@ -26,6 +26,11 @@ from .pdf_utils import gerar_ficha_box, gerar_relatorio_mensal, gerar_relatorio_
 
 
 class CanilLoginView(LoginView):
+    """Login com proteção contra força bruta.
+
+    Bloqueia por (usuário + IP) após LOGIN_MAX_TENTATIVAS falhas, por
+    LOGIN_BLOQUEIO_MINUTOS. O contador vive no cache (locmem por padrão).
+    """
     template_name = "core/login.html"
 
     def get_success_url(self):
@@ -34,9 +39,79 @@ class CanilLoginView(LoginView):
             return reverse("gestao_painel")
         return reverse("lista_caes")
 
+    # ---------- helpers de bloqueio ----------
+    def _chave(self, username):
+        ip = self.request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip() \
+            or self.request.META.get("REMOTE_ADDR", "")
+        return f"login:tentativas:{username or '-'}:{ip}"
+
+    def _tentativas(self, username):
+        from django.core.cache import cache
+
+        return cache.get(self._chave(username), 0)
+
+    def _bloqueado(self, username):
+        from django.conf import settings
+
+        return self._tentativas(username) >= settings.LOGIN_MAX_TENTATIVAS
+
+    def _registrar_falha(self, username):
+        from django.conf import settings
+        from django.core.cache import cache
+
+        cache.set(
+            self._chave(username), self._tentativas(username) + 1,
+            timeout=settings.LOGIN_BLOQUEIO_MINUTOS * 60,
+        )
+
+    def _limpar(self, username):
+        from django.core.cache import cache
+
+        cache.delete(self._chave(username))
+
+    def form_valid(self, form):
+        self._limpar(form.get_user().get_username())
+        return super().form_valid(form)
+
+    def form_invalid(self, form):
+        from django.conf import settings
+
+        username = (form.data.get("username") or "").strip()
+        self._registrar_falha(username)
+        if self._tentativas(username) >= settings.LOGIN_MAX_TENTATIVAS:
+            form.add_error(
+                None,
+                f"Muitas tentativas de acesso. Aguarde {settings.LOGIN_BLOQUEIO_MINUTOS} minutos.",
+            )
+        return super().form_invalid(form)
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.method == "POST":
+            username = (request.POST.get("username") or "").strip()
+            if self._bloqueado(username):
+                form = self.get_form()
+                form.add_error(
+                    None,
+                    "Muitas tentativas de acesso. Aguarde alguns minutos antes de tentar novamente.",
+                )
+                return render(request, self.template_name, {"form": form}, status=429)
+        return super().dispatch(request, *args, **kwargs)
+
 
 class CanilLogoutView(LogoutView):
     next_page = "login"
+
+
+def _pdf_response(buffer, filename):
+    """Resposta de PDF sem cache (dados operacionais/sanitários sensíveis)."""
+    import re as _re
+
+    seguro = _re.sub(r'[^A-Za-z0-9._-]', "_", filename) or "documento.pdf"
+    resp = HttpResponse(buffer, content_type="application/pdf")
+    resp["Content-Disposition"] = f'inline; filename="{seguro}"'
+    resp["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+    resp["X-Content-Type-Options"] = "nosniff"
+    return resp
 
 
 def eh_superusuario(user):
@@ -255,9 +330,15 @@ def _sem_pelotao(request):
 
 
 def _get(model, request, pk, **kwargs):
+    """Busca objeto escopado ao canil em operação e ao pelotão do usuário."""
     if model is Cao:
         return get_object_or_404(
             Cao.objects.filter(_q_pelotao(request)),
+            pk=pk, canil=request.canil_escopo, **kwargs,
+        )
+    if model is Condutor:
+        return get_object_or_404(
+            model.objects.filter(_q_condutor_pelotao(request)),
             pk=pk, canil=request.canil_escopo, **kwargs,
         )
     return get_object_or_404(model, pk=pk, canil=request.canil_escopo, **kwargs)
@@ -355,8 +436,7 @@ def cao_excluir(request, pk):
 def cao_ficha_pdf(request, pk):
     cao = _get(Cao, request, pk)
     buffer = gerar_ficha_box(cao)
-    resp = HttpResponse(buffer, content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="ficha_box_{cao.nome}.pdf"'
+    resp = _pdf_response(buffer, f"ficha_box_{cao.nome}.pdf")
     return resp
 
 
@@ -366,8 +446,7 @@ def cao_ficha_sanitaria_pdf(request, pk):
     ectoparasitas, ocorrências de saúde e visitas técnicas)."""
     cao = _get(Cao, request, pk)
     buffer = gerar_ficha_sanitaria(cao)
-    resp = HttpResponse(buffer, content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="ficha_sanitaria_{cao.nome}.pdf"'
+    resp = _pdf_response(buffer, f"ficha_sanitaria_{cao.nome}.pdf")
     return resp
 
 
@@ -559,14 +638,16 @@ def lista_ocorrencias(request):
     prod_qs = prod_qs.order_by("data", "id")
     prod_totais_qs = prod_qs.aggregate(
         total_armas=Sum("qtd_armas"), total_procurados=Sum("qtd_procurados"),
+        total_itens=Sum("qtd_itens_apreendidos"),
     )
     prod_totais = {
         "total_ocorrencias": prod_qs.count(),
         "total_armas": prod_totais_qs["total_armas"] or 0,
         "total_procurados": prod_totais_qs["total_procurados"] or 0,
+        "total_itens": prod_totais_qs["total_itens"] or 0,
     }
     por_tipo_qs = prod_qs.values("tipo").annotate(n=Count("id"))
-    por_tipo = {"F01": 0, "J09": 0, "G01": 0, "E07": 0}
+    por_tipo = {"F01": 0, "J09": 0, "G01": 0, "E07": 0, "B04": 0, "B01": 0}
     for linha in por_tipo_qs:
         por_tipo[linha["tipo"]] = linha["n"]
     drogas = _drogas_convertidas(prod_qs)
@@ -610,17 +691,24 @@ def produtividade_mensal_pdf(request):
         qs = qs.filter(cao__isnull=True)
         cao_nome = "Sem cão"
     elif cao_id:
-        cao_obj = get_object_or_404(
-            Cao.objects.filter(_q_pelotao(request)), pk=cao_id, canil=canil
-        )
+        try:
+            cao_obj = get_object_or_404(
+                Cao.objects.filter(_q_pelotao(request)), pk=int(cao_id), canil=canil
+            )
+        except (TypeError, ValueError):
+            raise Http404("Cão inválido.")
         qs = qs.filter(cao=cao_obj)
         cao_nome = cao_obj.nome
     qs = qs.order_by("data", "id")
-    agg = qs.aggregate(total_armas=Sum("qtd_armas"), total_procurados=Sum("qtd_procurados"))
+    agg = qs.aggregate(
+        total_armas=Sum("qtd_armas"), total_procurados=Sum("qtd_procurados"),
+        total_itens=Sum("qtd_itens_apreendidos"),
+    )
     totais = {"total_ocorrencias": qs.count(), "total_armas": agg["total_armas"] or 0,
               "total_procurados": agg["total_procurados"] or 0,
-              "total_sem_cao": qs.filter(cao__isnull=True).count()}
-    por_tipo = {"F01": 0, "J09": 0, "G01": 0, "E07": 0}
+              "total_sem_cao": qs.filter(cao__isnull=True).count(),
+              "total_itens": agg["total_itens"] or 0}
+    por_tipo = {"F01": 0, "J09": 0, "G01": 0, "E07": 0, "B04": 0, "B01": 0}
     for linha in qs.values("tipo").annotate(n=Count("id")):
         por_tipo[linha["tipo"]] = linha["n"]
     drogas = _drogas_convertidas(qs)
@@ -628,8 +716,7 @@ def produtividade_mensal_pdf(request):
         canil.nome if hasattr(canil, "nome") else str(canil),
         mes, ano, cao_nome, list(qs), totais, por_tipo, drogas,
     )
-    resp = HttpResponse(buffer, content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="produtividade_{ano}_{mes:02d}.pdf"'
+    resp = _pdf_response(buffer, f"produtividade_{ano}_{mes:02d}.pdf")
     return resp
 
 
@@ -866,8 +953,7 @@ def relatorio_mensal_pdf(request):
         vacinas=cao.vacinas.filter(data_aplicacao__range=(di, df)),
         medicamentos=cao.medicamentos.filter(data_inicio__range=(di, df)),
     )
-    resp = HttpResponse(buffer, content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="relatorio_{cao.nome}_{di}_{df}.pdf"'
+    resp = _pdf_response(buffer, f"relatorio_{cao.nome}_{di}_{df}.pdf")
     return resp
 
 
@@ -924,8 +1010,7 @@ def relatorio_geral_pdf(request):
     apenas_ativos = form.cleaned_data["apenas_ativos"]
     linhas = _montar_linhas_relatorio_geral(request, di, df, apenas_ativos)
     buffer = gerar_relatorio_geral_mensal(di, df, linhas, apenas_ativos)
-    resp = HttpResponse(buffer, content_type="application/pdf")
-    resp["Content-Disposition"] = f'inline; filename="relatorio_geral_{di}_{df}.pdf"'
+    resp = _pdf_response(buffer, f"relatorio_geral_{di}_{df}.pdf")
     return resp
 
 

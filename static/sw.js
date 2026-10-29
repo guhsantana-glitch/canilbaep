@@ -1,5 +1,5 @@
 /* Service Worker do Canil 10° BAEP — shell offline + cache de estáticos. */
-const VERSAO = "canil-v1";
+const VERSAO = "canil-v2";
 const NUCLEO = ["/", "/static/manifest.json"];
 
 self.addEventListener("install", (event) => {
@@ -32,7 +32,9 @@ self.addEventListener("fetch", (event) => {
   }
 
   // Estáticos/imagens: cache primeiro, atualiza em segundo plano.
-  if (url.pathname.startsWith("/static/") || url.pathname.startsWith("/media/")) {
+  // /media/ NÃO é cacheado: fotos e documentos são protegidos por canil —
+  // em aparelho compartilhado, o cache vazaria dados de outro usuário.
+  if (url.pathname.startsWith("/static/")) {
     event.respondWith(
       caches.match(req).then((hit) => {
         const busca = fetch(req).then((resp) => {

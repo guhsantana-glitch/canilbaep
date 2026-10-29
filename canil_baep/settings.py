@@ -4,19 +4,26 @@ Django settings for canil_baep project (Sistema de Gestão do Canil - 10° BAEP)
 
 import os
 from pathlib import Path
+
 import dj_database_url
 from dotenv import load_dotenv
+from django.core.exceptions import ImproperlyConfigured
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")  # carrega variáveis do .env em desenvolvimento local
 
 # SECURITY: em produção, defina a variável de ambiente DJANGO_SECRET_KEY
-SECRET_KEY = os.environ.get(
-    "DJANGO_SECRET_KEY",
-    "django-insecure-CHANGE-ME-antes-de-colocar-em-producao"
-)
+CHAVE_PADRAO = "django-insecure-CHANGE-ME-antes-de-colocar-em-producao"
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY") or CHAVE_PADRAO
 
-DEBUG = os.environ.get("DJANGO_DEBUG", "True") == "True"
+# Fail-closed: DEBUG desligado por padrão (nunca expor traceback em produção).
+DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
+
+if not DEBUG and SECRET_KEY == CHAVE_PADRAO:
+    raise ImproperlyConfigured(
+        "Defina DJANGO_SECRET_KEY (string aleatória longa) no ambiente antes de rodar. "
+        "Gere uma com: python -c \"import secrets; print(secrets.token_urlsafe(64))\""
+    )
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get("RENDER_EXTERNAL_HOSTNAME")
 
@@ -111,7 +118,12 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # Com elas, fotos/documentos vão para o bucket e sobrevivem aos
 # deploys do Render (cujo disco é efêmero e apaga tudo a cada deploy).
 # Veja o README (seção Deploy) para criar o bucket e as chaves.
+#
+# PRIVACIDADE: os arquivos NUNCA ficam públicos. O acesso usa URL assinada
+# (com validade curta) gerada pelo próprio S3 — só quem tem o link recebe.
+# Só ative MEDIA_PUBLICA=1 se quiser bucket público de verdade (recomendável: NÃO).
 STORAGE_BUCKET = os.environ.get("STORAGE_BUCKET", "") or os.environ.get("R2_BUCKET", "")
+MEDIA_PUBLICA = os.environ.get("MEDIA_PUBLICA", "0") in ("1", "true", "True")
 if STORAGE_BUCKET:
     STORAGES = {
         "default": {
@@ -124,8 +136,13 @@ if STORAGE_BUCKET:
                 "region_name": os.environ.get("STORAGE_REGION", "auto"),
                 "addressing_style": os.environ.get("STORAGE_ADDRESSING_STYLE") or None,
                 "default_acl": None,
-                "querystring_auth": False,
-                "custom_domain": os.environ.get("STORAGE_PUBLIC_URL", "") or os.environ.get("R2_PUBLIC_URL", ""),
+                # URL assinada com validade curta: impede download anônimo/vazamento.
+                "querystring_auth": not MEDIA_PUBLICA,
+                "querystring_expire": int(os.environ.get("STORAGE_URL_EXPIRES", "600")),
+                "custom_domain": (
+                    (os.environ.get("STORAGE_PUBLIC_URL", "") or os.environ.get("R2_PUBLIC_URL", ""))
+                    if MEDIA_PUBLICA else ""
+                ),
                 "location": "media",
             },
         },
@@ -133,11 +150,40 @@ if STORAGE_BUCKET:
             "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
         },
     }
-    _public = os.environ.get("STORAGE_PUBLIC_URL", "") or os.environ.get("R2_PUBLIC_URL", "")
-    MEDIA_URL = f'https://{_public}/media/'
+    # Observação: com S3 privado, `arquivo.url` já devolve a URL assinada do
+    # próprio bucket (o django-storages ignora MEDIA_URL nesse caso).
+    # MEDIA_URL continua "/media/" para o armazenamento local em disco.
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'lista_caes'
 LOGOUT_REDIRECT_URL = 'login'
+
+# === Cabeçalhos de segurança HTTP (fail-safe: só desligado em DEBUG) ===
+def _flag(nome, padrao="True"):
+    return os.environ.get(nome, padrao) in ("1", "true", "True")
+
+
+# Render fica atrás de proxy TLS: confia no X-Forwarded-Proto para o redirect.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_SSL_REDIRECT = not DEBUG and _flag("DJANGO_SSL_REDIRECT")
+SECURE_HSTS_SECONDS = int(os.environ.get("DJANGO_HSTS_SECONDS", "0" if DEBUG else "31536000"))
+SECURE_HSTS_INCLUDE_SUBDOMAINS = not DEBUG
+SECURE_HSTS_PRELOAD = False  # só ative se o domínio for 100% HTTPS
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = False  # o JS deaboque de CSRF depende do cookie
+CSRF_COOKIE_SAMESITE = "Lax"
+# Limites de upload (fotos/documentos)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+# Bloqueia brute-force no login (cache local por usuário+IP)
+LOGIN_MAX_TENTATIVAS = int(os.environ.get("LOGIN_MAX_TENTATIVAS", "8"))
+LOGIN_BLOQUEIO_MINUTOS = int(os.environ.get("LOGIN_BLOQUEIO_MINUTOS", "15"))

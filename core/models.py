@@ -55,7 +55,10 @@ class Condutor(models.Model):
         verbose_name="Canil", null=True, blank=True,
     )
     nome = models.CharField("Nome completo", max_length=150)
-    matricula = models.CharField("Matrícula", max_length=30, unique=True)
+    matricula = models.CharField(
+        "Matrícula", max_length=30,
+        help_text="Única dentro do canil (a mesma matrícula pode existir em canis diferentes).",
+    )
     posto_graduacao = models.CharField("Posto/Graduação", max_length=60, blank=True)
     pelotao = models.ForeignKey(
         "canis.Pelotao", on_delete=models.SET_NULL, null=True, blank=True,
@@ -75,6 +78,11 @@ class Condutor(models.Model):
         verbose_name = "Condutor"
         verbose_name_plural = "Condutores"
         ordering = ["nome"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["canil", "matricula"], name="condutor_matricula_unica_por_canil",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.nome} ({self.matricula})"
@@ -359,7 +367,7 @@ class OcorrenciaPolicial(models.Model):
     """Ocorrência operacional com emprego de cão farejador / patrulha.
 
     Tipificação PMESP: F01 (tráfico de drogas), J09 (arma de fogo),
-    G01 (captura de procurado).
+    G01 (captura de procurado), E07 (apoio), B04 (roubo), B01 (furto).
     """
 
     class Tipo(models.TextChoices):
@@ -424,6 +432,14 @@ class OcorrenciaPolicial(models.Model):
         "Descrição das armas (tipo/calibre/modelo)", max_length=250, blank=True,
     )
     qtd_procurados = models.PositiveIntegerField("Procurados capturados", default=0)
+    qtd_itens_apreendidos = models.PositiveIntegerField(
+        "Itens/objetos apreendidos", default=0,
+        help_text="Quantidade de itens/objetos apreendidos no furto/roubo (B01/B04).",
+    )
+    descricao_itens_apreendidos = models.TextField(
+        "Descrição dos itens/objetos apreendidos", blank=True,
+        help_text="Descreva os itens/objetos apreendidos (ex.: celular, veículo, documentos...).",
+    )
     observacoes = models.TextField("Observações / detalhes da ocorrência", blank=True)
     criado_em = models.DateTimeField(auto_now_add=True)
 
@@ -452,4 +468,6 @@ class OcorrenciaPolicial(models.Model):
             partes.append(f"{self.qtd_armas} arma(s)")
         if self.qtd_procurados:
             partes.append(f"{self.qtd_procurados} procurado(s)")
+        if self.qtd_itens_apreendidos:
+            partes.append(f"{self.qtd_itens_apreendidos} item(ns) apreendido(s)")
         return " · ".join(partes) if partes else "-"

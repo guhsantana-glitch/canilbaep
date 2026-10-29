@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<span class="eyebrow">Manutenção</span>
+<h1>Atualizar banco de dados</h1>
+<div class="card">
+  <p>Executa as <b>migrations</b> pendentes do sistema (criação de tabelas e
+  novos campos). Use depois de cada atualização que inclua migration.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button class="btn" type="submit">Executar migrations agora</button>
+    <a href="{% url 'gestao_painel' %}" class="btn btn-secundario">Voltar</a>
+  </form>
+</div>
+{% endblock %}
